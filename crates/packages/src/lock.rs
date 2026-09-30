@@ -55,7 +55,7 @@ pub fn package_manager_running() -> Option<bool> {
             continue;
         };
         let comm = comm.trim();
-        if PACKAGE_MANAGERS.iter().any(|p| comm == *p) {
+        if PACKAGE_MANAGERS.contains(&comm) {
             return Some(true);
         }
     }

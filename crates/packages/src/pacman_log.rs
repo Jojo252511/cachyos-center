@@ -307,7 +307,10 @@ pub fn read_from(path: &Path, offset: u64) -> std::io::Result<(String, u64)> {
     file.take(MAX_READ_BYTES).read_to_end(&mut buf)?;
     let complete = buf.iter().rposition(|b| *b == b'\n').map_or(0, |p| p + 1);
     buf.truncate(complete);
-    Ok((String::from_utf8_lossy(&buf).into_owned(), offset + complete as u64))
+    Ok((
+        String::from_utf8_lossy(&buf).into_owned(),
+        offset + complete as u64,
+    ))
 }
 
 /// Current size of the log (start offset for [`read_from`]).
@@ -394,9 +397,15 @@ mod tests {
     #[test]
     fn command_kinds() {
         assert_eq!(command_kind("pacman -Syu"), CommandKind::SyncUpgrade);
-        assert_eq!(command_kind("pacman -S -y -u -- pkg"), CommandKind::SyncUpgrade);
+        assert_eq!(
+            command_kind("pacman -S -y -u -- pkg"),
+            CommandKind::SyncUpgrade
+        );
         assert_eq!(command_kind("pacman -S foo"), CommandKind::Sync);
-        assert_eq!(command_kind("pacman -D -q --asdeps -- a"), CommandKind::Database);
+        assert_eq!(
+            command_kind("pacman -D -q --asdeps -- a"),
+            CommandKind::Database
+        );
         assert_eq!(command_kind("pacman -U -- /x"), CommandKind::Upgrade);
     }
 

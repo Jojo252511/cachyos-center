@@ -214,7 +214,10 @@ mod tests {
 
     #[test]
     fn unavailable_texts() {
-        assert!(unavailable_text("libalpm.so.17: cannot open shared object file").contains("not compatible"));
+        assert!(
+            unavailable_text("libalpm.so.17: cannot open shared object file")
+                .contains("not compatible")
+        );
         assert!(unavailable_text("not found").contains("could not be loaded"));
     }
 }

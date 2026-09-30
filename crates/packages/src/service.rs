@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use cachyos_center_core::bridge::{AlpmConfig, BridgeRequest, ClassifyContext, UpdatesData};
+use cachyos_center_core::package::PackageId;
 use cachyos_center_core::package::{
     CatalogInstallFilter, CatalogQuery, InstallReason, InstalledFilter, InstalledQuery,
     PackageOrigin, PackagePage, PackageRecord, PackageRef, PackageSummary, RepositoryInfo,
@@ -14,7 +15,6 @@ use cachyos_center_core::updates::{
     CheckStatus, INSTALL_MAX_DATA_AGE_SECS, UpdateCandidate, UpdateCheckResult, UpdateFlag,
     freshness,
 };
-use cachyos_center_core::package::PackageId;
 use cachyos_center_core::{AppError, AppResult, ErrorCode, now, validate};
 
 use crate::check::{self, CheckState};
@@ -221,7 +221,9 @@ impl PackageService {
     pub fn last_check(&self) -> UpdateCheckResult {
         let state = CheckState::load(&self.check_state);
         let missing = check::missing_prerequisites();
-        let Some(checked_at) = state.checked_at.filter(|_| check::has_synced_db(&self.check_db))
+        let Some(checked_at) = state
+            .checked_at
+            .filter(|_| check::has_synced_db(&self.check_db))
         else {
             let status = if !missing.is_empty() {
                 CheckStatus::PrerequisiteMissing
@@ -353,7 +355,8 @@ impl PackageService {
             .map(|u| u.package_id.name)
             .collect();
         if !held.is_empty() {
-            plan.warnings.push(PlanWarning::HeldBackPackages { packages: held });
+            plan.warnings
+                .push(PlanWarning::HeldBackPackages { packages: held });
         }
     }
 

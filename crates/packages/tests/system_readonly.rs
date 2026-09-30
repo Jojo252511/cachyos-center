@@ -8,7 +8,9 @@
 use std::path::Path;
 
 use cachyos_center_core::ErrorCode;
-use cachyos_center_core::package::{CatalogInstallFilter, CatalogQuery, InstalledFilter, InstalledQuery, PackageRef};
+use cachyos_center_core::package::{
+    CatalogInstallFilter, CatalogQuery, InstalledFilter, InstalledQuery, PackageRef,
+};
 use cachyos_center_core::plan::{PlanKind, PlanWarning};
 use cachyos_center_core::system::BackendStatus;
 use cachyos_center_core::updates::CheckStatus;
@@ -35,7 +37,9 @@ fn service(dir: &Path) -> Option<PackageService> {
 #[test]
 fn installed_list_contains_pacman() {
     let dir = tempfile::tempdir().unwrap();
-    let Some(svc) = service(dir.path()) else { return };
+    let Some(svc) = service(dir.path()) else {
+        return;
+    };
     let page = svc
         .installed(&InstalledQuery {
             query: Some("pacman".into()),
@@ -47,13 +51,18 @@ fn installed_list_contains_pacman() {
     assert!(page.items.iter().any(|p| p.name == "pacman"), "{page:?}");
     let all = svc.installed_all().unwrap();
     assert!(all.len() >= page.items.len());
-    assert!(all.windows(2).all(|w| w[0].name <= w[1].name), "sorted by name");
+    assert!(
+        all.windows(2).all(|w| w[0].name <= w[1].name),
+        "sorted by name"
+    );
 }
 
 #[test]
 fn pagination_is_consistent() {
     let dir = tempfile::tempdir().unwrap();
-    let Some(svc) = service(dir.path()) else { return };
+    let Some(svc) = service(dir.path()) else {
+        return;
+    };
     let first = svc
         .installed(&InstalledQuery {
             query: None,
@@ -80,7 +89,9 @@ fn pagination_is_consistent() {
 #[test]
 fn search_finds_pacman_in_repositories() {
     let dir = tempfile::tempdir().unwrap();
-    let Some(svc) = service(dir.path()) else { return };
+    let Some(svc) = service(dir.path()) else {
+        return;
+    };
     let results = svc
         .search(&CatalogQuery {
             query: "pacman".into(),
@@ -89,7 +100,11 @@ fn search_finds_pacman_in_repositories() {
             limit: 20,
         })
         .unwrap();
-    assert_eq!(results.first().map(|p| p.name.as_str()), Some("pacman"), "exact match first");
+    assert_eq!(
+        results.first().map(|p| p.name.as_str()),
+        Some("pacman"),
+        "exact match first"
+    );
     assert!(results.iter().all(|p| p.repository.is_some()));
     // Regex metacharacters are plain text.
     svc.search(&CatalogQuery {
@@ -113,7 +128,9 @@ fn search_finds_pacman_in_repositories() {
 #[test]
 fn details_of_pacman() {
     let dir = tempfile::tempdir().unwrap();
-    let Some(svc) = service(dir.path()) else { return };
+    let Some(svc) = service(dir.path()) else {
+        return;
+    };
     let record = svc
         .details(&PackageRef {
             name: "pacman".into(),
@@ -135,7 +152,9 @@ fn details_of_pacman() {
 #[test]
 fn plans_are_computed_without_taking_the_lock() {
     let dir = tempfile::tempdir().unwrap();
-    let Some(svc) = service(dir.path()) else { return };
+    let Some(svc) = service(dir.path()) else {
+        return;
+    };
     let lock = Path::new("/var/lib/pacman/db.lck");
     let locked_before = lock.exists();
 
@@ -152,16 +171,24 @@ fn plans_are_computed_without_taking_the_lock() {
         ),
         Err(e) => assert_eq!(e.code, ErrorCode::DependencyProblem, "{e:?}"),
     }
-    let not_installed = svc.plan_remove("cachyos-center-does-not-exist", false).unwrap_err();
+    let not_installed = svc
+        .plan_remove("cachyos-center-does-not-exist", false)
+        .unwrap_err();
     assert_eq!(not_installed.code, ErrorCode::NotFound);
 
-    assert_eq!(lock.exists(), locked_before, "planning must not create db.lck");
+    assert_eq!(
+        lock.exists(),
+        locked_before,
+        "planning must not create db.lck"
+    );
 }
 
 #[test]
 fn install_plan_requires_fresh_repository_data() {
     let dir = tempfile::tempdir().unwrap();
-    let Some(svc) = service(dir.path()) else { return };
+    let Some(svc) = service(dir.path()) else {
+        return;
+    };
     let err = svc.plan_install("core", "pacman").unwrap_err();
     assert_eq!(err.code, ErrorCode::Stale);
 }
@@ -169,10 +196,15 @@ fn install_plan_requires_fresh_repository_data() {
 #[test]
 fn never_checked_is_not_zero_updates() {
     let dir = tempfile::tempdir().unwrap();
-    let Some(svc) = service(dir.path()) else { return };
+    let Some(svc) = service(dir.path()) else {
+        return;
+    };
     let result = svc.last_check();
     assert!(
-        matches!(result.status, CheckStatus::NeverChecked | CheckStatus::PrerequisiteMissing),
+        matches!(
+            result.status,
+            CheckStatus::NeverChecked | CheckStatus::PrerequisiteMissing
+        ),
         "{result:?}"
     );
     assert!(!result.is_current());
@@ -183,19 +215,34 @@ fn never_checked_is_not_zero_updates() {
 #[ignore = "network access"]
 fn isolated_update_check() {
     let dir = tempfile::tempdir().unwrap();
-    let Some(svc) = service(dir.path()) else { return };
-    let before = std::fs::metadata("/var/lib/pacman/sync").and_then(|m| m.modified()).ok();
+    let Some(svc) = service(dir.path()) else {
+        return;
+    };
+    let before = std::fs::metadata("/var/lib/pacman/sync")
+        .and_then(|m| m.modified())
+        .ok();
     let result = svc.check_now();
     assert!(
-        matches!(result.status, CheckStatus::Fresh | CheckStatus::PrerequisiteMissing),
+        matches!(
+            result.status,
+            CheckStatus::Fresh | CheckStatus::PrerequisiteMissing
+        ),
         "{result:?}"
     );
     if result.status == CheckStatus::Fresh {
         let plan = result.plan.expect("fresh result has a plan");
-        assert_eq!(plan.entries.len(), result.updates.len() + plan.count(cachyos_center_core::plan::PlanAction::Remove));
+        assert_eq!(
+            plan.entries.len(),
+            result.updates.len() + plan.count(cachyos_center_core::plan::PlanAction::Remove)
+        );
         let install = svc.plan_install("core", "pacman").unwrap();
         assert_eq!(install.kind, PlanKind::Install);
     }
-    let after = std::fs::metadata("/var/lib/pacman/sync").and_then(|m| m.modified()).ok();
-    assert_eq!(before, after, "the productive sync database must not be touched");
+    let after = std::fs::metadata("/var/lib/pacman/sync")
+        .and_then(|m| m.modified())
+        .ok();
+    assert_eq!(
+        before, after,
+        "the productive sync database must not be touched"
+    );
 }

@@ -1,5 +1,6 @@
 [package]
 name = "cachyos-center-service"
+description = "Application core of cachyos-center: one read service for GUI and MCP, settings and history"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -10,6 +11,16 @@ publish = false
 
 [dependencies]
 cachyos-center-core.workspace = true
+cachyos-center-packages.workspace = true
+cachyos-center-system.workspace = true
+rusqlite.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
 
 [lints]
 workspace = true
