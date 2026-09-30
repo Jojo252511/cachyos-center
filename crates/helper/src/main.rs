@@ -54,7 +54,11 @@ enum Cmd {
         idle_secs: Option<u64>,
     },
     /// Run the scheduled preflight once (started by cachyos-center-preflight.service).
-    Preflight,
+    Preflight {
+        /// Development mode: state, policy and logs below this directory (not as root).
+        #[arg(long)]
+        dev_root: Option<PathBuf>,
+    },
 }
 
 fn init_logging() {
@@ -142,14 +146,20 @@ fn main() -> ExitCode {
                 }
             }
         }
-        Cmd::Preflight => {
-            if !is_root() {
-                eprintln!("the preflight must run as root");
-                return ExitCode::FAILURE;
-            }
-            let code = runtime.block_on(cachyos_center_helper::preflight::run(
-                &HelperConfig::production(),
-            ));
+        Cmd::Preflight { dev_root } => {
+            let config = match dev_root {
+                None if is_root() => HelperConfig::production(),
+                None => {
+                    eprintln!("the preflight must run as root (use --dev-root for development)");
+                    return ExitCode::FAILURE;
+                }
+                Some(_) if is_root() => {
+                    eprintln!("development mode is refused when running as root");
+                    return ExitCode::FAILURE;
+                }
+                Some(root) => HelperConfig::development(root),
+            };
+            let code = runtime.block_on(cachyos_center_helper::preflight::run(&config));
             if code == 0 {
                 ExitCode::SUCCESS
             } else {

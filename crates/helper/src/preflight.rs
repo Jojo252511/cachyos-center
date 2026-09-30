@@ -11,7 +11,6 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 
 use cachyos_center_core::operation::{Operation, OperationKind, OperationOrigin, OperationState};
-use cachyos_center_core::paths;
 use cachyos_center_core::plan::PlanWarning;
 use cachyos_center_core::policy::{AutoUpdateConfig, AutoUpdatePolicy};
 use cachyos_center_core::updates::CheckStatus;
@@ -99,10 +98,7 @@ pub async fn run(config: &HelperConfig) -> i32 {
     };
     run.state(OperationState::Checking);
 
-    let packages = PackageService::new(
-        Path::new(paths::SYSTEM_CHECK_DB).to_path_buf(),
-        Path::new(paths::SYSTEM_CHECK_STATE).to_path_buf(),
-    );
+    let packages = PackageService::new(config.check_db(), config.check_state());
     if policy.policy == AutoUpdatePolicy::NotifyOnly {
         let result = tokio::task::spawn_blocking(move || packages.check_now()).await;
         match result {
@@ -144,6 +140,10 @@ async fn prepare(run: &mut Run<'_>, policy: &AutoUpdateConfig, packages: Package
         run.state(OperationState::Succeeded);
         return 0;
     }
+    // Configuration blockers make every further check (and network access) pointless.
+    if !reasons.is_empty() {
+        return run.needs_attention(&reasons);
+    }
     if lock::is_locked(Path::new("/var/lib/pacman/db.lck"))
         || lock::package_manager_running() == Some(true)
     {
@@ -159,13 +159,13 @@ async fn prepare(run: &mut Run<'_>, policy: &AutoUpdateConfig, packages: Package
         reasons.push("less than 2 GiB free on /".into());
     }
     // News gate: unread or not checkable news block unattended installation.
-    let news_path = Path::new(paths::SYSTEM_NEWS_CACHE);
-    let cache = NewsCache::load(news_path);
+    let news_path = config.news_cache();
+    let cache = NewsCache::load(&news_path);
     let t = now();
     let cache = tokio::task::spawn_blocking(move || news::fetch_all(&cache, t))
         .await
         .unwrap_or_default();
-    let _ = cache.save(news_path);
+    let _ = cache.save(&news_path);
     let news_status = news::status(&cache, policy.news_acknowledged_until, false, now());
     if !news_status.errors.is_empty() {
         reasons.push("news check not possible".into());

@@ -137,6 +137,21 @@ impl HelperConfig {
         self.state_dir.join("timer-status.json")
     }
 
+    /// Isolated update-check database of the timer.
+    pub fn check_db(&self) -> PathBuf {
+        self.state_dir.join("checkup-db")
+    }
+
+    /// Metadata of the timer's update check.
+    pub fn check_state(&self) -> PathBuf {
+        self.state_dir.join("update-check.json")
+    }
+
+    /// News cache of the timer.
+    pub fn news_cache(&self) -> PathBuf {
+        self.state_dir.join("news.json")
+    }
+
     pub fn operation_log(&self, id: &str) -> PathBuf {
         self.log_dir.join(format!("{id}.log"))
     }
