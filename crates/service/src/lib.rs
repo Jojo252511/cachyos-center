@@ -51,6 +51,8 @@ pub trait ReadApi: Send + Sync {
     fn installed(&self, query: &InstalledQuery) -> AppResult<PackagePage>;
     fn recent_activity(&self, limit: u32) -> AppResult<Vec<HistoryEntry>>;
     fn health(&self) -> AppResult<HealthReport>;
+    /// Current user settings (e.g. whether the MCP server may answer).
+    fn user_settings(&self) -> Settings;
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -422,6 +424,10 @@ impl ReadApi for AppCore {
 
     fn health(&self) -> AppResult<HealthReport> {
         Ok(self.health_report())
+    }
+
+    fn user_settings(&self) -> Settings {
+        self.settings()
     }
 }
 
