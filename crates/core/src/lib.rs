@@ -13,6 +13,7 @@ pub mod error;
 pub mod health;
 pub mod history;
 pub mod hyprland;
+pub mod mcp;
 pub mod news;
 pub mod operation;
 pub mod package;
@@ -23,6 +24,7 @@ pub mod sanitize;
 pub mod settings;
 pub mod system;
 pub mod timefmt;
+pub mod ui;
 pub mod updates;
 pub mod validate;
 
