@@ -17,7 +17,10 @@ fn dbus_activation_and_policy() {
     let service = packaging("org.cachyos_center.Packages1.service");
     assert!(service.contains(&format!("Name={}", dbus::BUS_NAME)));
     assert!(service.contains(&format!("SystemdService={}", dbus::HELPER_UNIT)));
-    assert!(service.contains(&format!("Exec={}/cachyos-center-helper daemon", paths::LIBEXEC_DIR)));
+    assert!(service.contains(&format!(
+        "Exec={}/cachyos-center-helper daemon",
+        paths::LIBEXEC_DIR
+    )));
     let conf = packaging("org.cachyos_center.Packages1.conf");
     assert!(conf.contains(&format!("<allow own=\"{}\"/>", dbus::BUS_NAME)));
     assert!(conf.contains(&format!("send_interface=\"{}\"", dbus::INTERFACE)));
@@ -30,10 +33,19 @@ fn dbus_activation_and_policy() {
 fn polkit_actions_exist_without_blanket_rules() {
     let policy = packaging("org.cachyos-center.policy");
     for action in dbus::actions::ALL {
-        assert!(policy.contains(&format!("<action id=\"{action}\">")), "{action}");
+        assert!(
+            policy.contains(&format!("<action id=\"{action}\">")),
+            "{action}"
+        );
     }
-    assert_eq!(policy.matches("<action id=").count(), dbus::actions::ALL.len());
-    assert!(!policy.contains("<allow_active>yes</allow_active>"), "no action may be granted without authentication");
+    assert_eq!(
+        policy.matches("<action id=").count(),
+        dbus::actions::ALL.len()
+    );
+    assert!(
+        !policy.contains("<allow_active>yes</allow_active>"),
+        "no action may be granted without authentication"
+    );
     assert!(!policy.contains("<allow_any>yes"));
 }
 
@@ -67,14 +79,22 @@ fn pkgbuild_installs_the_expected_paths() {
         "$pkgdir/usr/lib/cachyos-center/cachyos-center-helper".to_string(),
         format!("$pkgdir/usr/bin/{}", mcp::BINARY_NAME),
         "$pkgdir/usr/share/polkit-1/actions/org.cachyos-center.policy".to_string(),
-        format!("$pkgdir/usr/share/dbus-1/system-services/{}.service", dbus::BUS_NAME),
+        format!(
+            "$pkgdir/usr/share/dbus-1/system-services/{}.service",
+            dbus::BUS_NAME
+        ),
         format!("$pkgdir/usr/share/applications/{APP_ID}.desktop"),
     ] {
         assert!(pkgbuild.contains(&needle), "{needle}");
     }
     assert_eq!(paths::LIBEXEC_DIR, "/usr/lib/cachyos-center");
     let tmpfiles = packaging("cachyos-center.tmpfiles");
-    for dir in [paths::SYSTEM_CONFIG_DIR, paths::SYSTEM_STATE_DIR, paths::SYSTEM_OPERATIONS_DIR, paths::SYSTEM_LOG_DIR] {
+    for dir in [
+        paths::SYSTEM_CONFIG_DIR,
+        paths::SYSTEM_STATE_DIR,
+        paths::SYSTEM_OPERATIONS_DIR,
+        paths::SYSTEM_LOG_DIR,
+    ] {
         assert!(tmpfiles.contains(dir), "{dir}");
     }
 }
