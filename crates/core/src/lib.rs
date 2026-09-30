@@ -52,3 +52,5 @@ pub const APP_NAME: &str = "cachyos-center";
 /// `org.cachyos_center` (see [`dbus`]) while desktop and polkit identifiers use
 /// the reverse-DNS form `org.cachyos-center`.
 pub const APP_ID: &str = "org.cachyos-center.CachyOSCenter";
+
+pub mod dashboard;

@@ -13,6 +13,14 @@ pub const POLICY_FILE: &str = "/etc/cachyos-center/auto-update.toml";
 pub const EXPERIMENTAL_FILE: &str = "/etc/cachyos-center/experimental.toml";
 /// Helper state (operation journal, timer status). World-readable, root-writable.
 pub const SYSTEM_STATE_DIR: &str = "/var/lib/cachyos-center";
+/// Operation journal of the helper (one JSON file per operation, world-readable).
+pub const SYSTEM_OPERATIONS_DIR: &str = "/var/lib/cachyos-center/operations";
+/// Isolated update-check database of the timer.
+pub const SYSTEM_CHECK_DB: &str = "/var/lib/cachyos-center/checkup-db";
+/// Metadata of the timer's update check.
+pub const SYSTEM_CHECK_STATE: &str = "/var/lib/cachyos-center/update-check.json";
+/// News cache of the timer.
+pub const SYSTEM_NEWS_CACHE: &str = "/var/lib/cachyos-center/news.json";
 /// Operation logs of the helper.
 pub const SYSTEM_LOG_DIR: &str = "/var/log/cachyos-center";
 /// Status of the last timer run, watched by the user notification unit.

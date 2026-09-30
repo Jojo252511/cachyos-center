@@ -152,6 +152,26 @@ pub struct Progress {
     pub phase_detail: Option<String>,
 }
 
+/// Package changes of an operation, counted from the pacman log (authoritative).
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ChangeCounts {
+    pub installed: u32,
+    pub upgraded: u32,
+    pub downgraded: u32,
+    pub reinstalled: u32,
+    pub removed: u32,
+    /// Affected package names (at most 20).
+    pub packages: Vec<String>,
+}
+
+impl ChangeCounts {
+    pub fn total(&self) -> u32 {
+        self.installed + self.upgraded + self.downgraded + self.reinstalled + self.removed
+    }
+}
+
 /// Result of an explicitly requested snapshot.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
@@ -196,6 +216,8 @@ pub struct Operation {
     pub snapshot: Option<SnapshotResult>,
     /// Number of `.pacnew`/`.pacsave` files reported by pacman during the transaction.
     pub new_pacnew_files: u32,
+    /// Changes recorded by pacman for this operation.
+    pub changes: ChangeCounts,
     /// Result could not be determined with certainty (e.g. after a crash).
     pub outcome_unknown: bool,
 }
@@ -220,6 +242,7 @@ impl Operation {
             progress: Progress::default(),
             snapshot: None,
             new_pacnew_files: 0,
+            changes: ChangeCounts::default(),
             outcome_unknown: false,
         }
     }
