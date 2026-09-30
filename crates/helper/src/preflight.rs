@@ -108,6 +108,7 @@ pub async fn run(config: &HelperConfig) -> i32 {
         match result {
             Ok(r) if r.status == CheckStatus::Fresh => {
                 run.op.summary = format!("{} updates available", r.updates.len());
+                run.op.progress.packages_total = u32::try_from(r.updates.len()).ok();
                 run.state(OperationState::Succeeded);
             }
             Ok(r) => {

@@ -8,6 +8,7 @@
 
 pub mod bridge;
 pub mod classify;
+pub mod dashboard;
 pub mod dbus;
 pub mod error;
 pub mod health;
@@ -48,11 +49,13 @@ pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Human readable application name.
 pub const APP_NAME: &str = "cachyos-center";
 
-/// Desktop application identifier (desktop file name, Wayland app-id, icon name).
-///
-/// D-Bus names cannot contain hyphens, therefore the D-Bus namespace is
-/// `org.cachyos_center` (see [`dbus`]) while desktop and polkit identifiers use
-/// the reverse-DNS form `org.cachyos-center`.
-pub const APP_ID: &str = "org.cachyos-center.CachyOSCenter";
+/// Wayland app-id / window class of the GUI, desktop file id
+/// (`cachyos-center.desktop`) and icon name. Verified on Hyprland: the
+/// window reports `class = cachyos-center` (use it for window rules).
+pub const APP_ID: &str = "cachyos-center";
 
-pub mod dashboard;
+/// Reverse-DNS identifier of the Tauri application (single-instance D-Bus
+/// name). D-Bus names cannot contain hyphens, therefore the helper's D-Bus
+/// namespace is `org.cachyos_center` (see [`dbus`]) while polkit ids use the
+/// reverse-DNS form `org.cachyos-center`.
+pub const APP_IDENTIFIER: &str = "org.cachyos-center.CachyOSCenter";

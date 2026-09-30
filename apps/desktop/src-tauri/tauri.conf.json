@@ -1,0 +1,49 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "cachyos-center",
+  "mainBinaryName": "cachyos-center",
+  "version": "0.1.0",
+  "identifier": "org.cachyos-center.CachyOSCenter",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "cachyos-center",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 640,
+        "minHeight": 480,
+        "resizable": true,
+        "focus": true
+      }
+    ],
+    "withGlobalTauri": false,
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'",
+      "devCsp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src ipc: http://ipc.localhost ws://localhost:1420 http://localhost:1420; object-src 'none'",
+      "freezePrototype": true,
+      "capabilities": ["main-window"]
+    }
+  },
+  "bundle": {
+    "active": false,
+    "targets": [],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.png"
+    ],
+    "category": "System",
+    "shortDescription": "Systemübersicht, Updates und Software für CachyOS",
+    "longDescription": "cachyos-center bündelt Systemübersicht, sichere Paketverwaltung, Updatekontrolle und einen lokalen, rein lesenden MCP-Server für CachyOS mit Hyprland. Unabhängiges Community-Projekt, kein offizielles CachyOS-Produkt.",
+    "copyright": "cachyos-center contributors, GPL-3.0-or-later",
+    "license": "GPL-3.0-or-later"
+  }
+}

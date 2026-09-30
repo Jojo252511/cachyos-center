@@ -8,7 +8,7 @@ members = [
     "crates/service",
     "crates/helper",
     "crates/mcp",
-    # "apps/desktop/src-tauri",  # enabled once the Tauri app exists
+    "apps/desktop/src-tauri",
 ]
 default-members = [
     "crates/core",
