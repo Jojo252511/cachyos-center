@@ -1,0 +1,25 @@
+[package]
+name = "cachyos-center-alpm-bridge"
+description = "The only component of cachyos-center that links libalpm; loaded at runtime via dlopen"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+build = "build.rs"
+
+[lib]
+name = "cachyos_center_alpm"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+alpm.workspace = true
+pacmanconf.workspace = true
+cachyos-center-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true
