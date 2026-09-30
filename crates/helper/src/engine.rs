@@ -631,7 +631,8 @@ impl Engine {
             }
         }
         let log_outcome = summary.transactions.last().map(|t| t.outcome);
-        let exit_ok = outcome.is_some_and(StepOutcome::success);
+        // Without an exit code (reconstruction after a restart) the log alone decides.
+        let exit_ok = outcome.is_none_or(StepOutcome::success);
         self.with_op(id, |op| {
             op.changes = changes;
             op.new_pacnew_files = pacnew;
