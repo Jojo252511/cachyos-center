@@ -1,5 +1,6 @@
 [package]
 name = "cachyos-center-system"
+description = "System information, Hyprland IPC, health checks and news for cachyos-center"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -10,6 +11,14 @@ publish = false
 
 [dependencies]
 cachyos-center-core.workspace = true
+quick-xml.workspace = true
+rustix.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
 
 [lints]
 workspace = true
