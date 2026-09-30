@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Name=cachyos-center
+GenericName=Systemverwaltung
+GenericName[de]=Systemverwaltung
+GenericName[en]=System maintenance
+Comment=Systemübersicht, sichere Updates und Software für CachyOS
+Comment[de]=Systemübersicht, sichere Updates und Software für CachyOS
+Comment[en]=System overview, safe updates and software for CachyOS
+Exec=cachyos-center
+Icon=cachyos-center
+Terminal=false
+Categories=Settings;PackageManager;
+Keywords=update;updates;pacman;packages;software;cachyos;hyprland;mcp;
+StartupNotify=true
+StartupWMClass=cachyos-center

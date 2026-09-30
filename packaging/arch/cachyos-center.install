@@ -1,0 +1,26 @@
+post_install() {
+  cat <<'MSG'
+==> cachyos-center wurde installiert.
+    Desktop-Benachrichtigungen für automatische Updates (optional, pro Benutzer):
+      systemctl --user enable --now cachyos-center-notify.path
+    Der Modus „Automatisch beim nächsten Neustart installieren“ ist in Entwicklung
+    und standardmäßig gesperrt (siehe /usr/share/doc/cachyos-center/automatische-updates.md).
+MSG
+}
+
+post_upgrade() {
+  :
+}
+
+pre_remove() {
+  if systemctl is-enabled --quiet cachyos-center-preflight.timer 2>/dev/null; then
+    systemctl disable --now cachyos-center-preflight.timer >/dev/null 2>&1 || true
+  fi
+}
+
+post_remove() {
+  cat <<'MSG'
+==> Konfiguration und Verlauf bleiben erhalten und können bei Bedarf gelöscht werden:
+    /etc/cachyos-center  /var/lib/cachyos-center  /var/log/cachyos-center
+MSG
+}

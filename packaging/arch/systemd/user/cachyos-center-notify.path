@@ -1,0 +1,9 @@
+[Unit]
+Description=cachyos-center: watch the status of automatic updates
+
+[Path]
+PathChanged=/var/lib/cachyos-center/timer-status.json
+Unit=cachyos-center-notify.service
+
+[Install]
+WantedBy=default.target

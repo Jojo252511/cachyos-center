@@ -1,0 +1,13 @@
+[Unit]
+Description=cachyos-center scheduled update check or preparation
+Documentation=https://github.com/Jojo252511/cachyos-center/blob/main/docs/automatische-updates.md
+
+[Timer]
+# The schedule of the update window is set by cachyos-center-helper in
+# /etc/systemd/system/cachyos-center-preflight.timer.d/schedule.conf.
+OnCalendar=*-*-* 12:00:00
+Persistent=true
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target

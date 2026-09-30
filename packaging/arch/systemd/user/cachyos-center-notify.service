@@ -1,0 +1,6 @@
+[Unit]
+Description=cachyos-center: desktop notification about automatic updates
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/cachyos-center --notify-timer-status

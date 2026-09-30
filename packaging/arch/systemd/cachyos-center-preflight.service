@@ -1,0 +1,18 @@
+[Unit]
+Description=cachyos-center scheduled update check or preparation
+Documentation=https://github.com/Jojo252511/cachyos-center/blob/main/docs/automatische-updates.md
+After=network-online.target
+Wants=network-online.target
+# Never compete with a running package manager.
+ConditionPathExists=!/var/lib/pacman/db.lck
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/cachyos-center/cachyos-center-helper preflight
+StateDirectory=cachyos-center
+StateDirectoryMode=0755
+LogsDirectory=cachyos-center
+LogsDirectoryMode=0755
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=2h

@@ -12,3 +12,4 @@
 .vscode/
 .idea/
 /target-*/
+/packaging/arch/.SRCINFO

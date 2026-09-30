@@ -1,0 +1,6 @@
+# D-Bus activation of the cachyos-center privileged helper.
+[D-BUS Service]
+Name=org.cachyos_center.Packages1
+Exec=/usr/lib/cachyos-center/cachyos-center-helper daemon
+User=root
+SystemdService=cachyos-center-helper.service

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<!--
+  One action per changing helper method. No blanket rules are shipped:
+  every action requires administrator authentication by default
+  (auth_admin_keep: the authorization is kept for a few minutes).
+-->
+<policyconfig>
+  <vendor>cachyos-center</vendor>
+  <vendor_url>https://github.com/Jojo252511/cachyos-center</vendor_url>
+  <icon_name>cachyos-center</icon_name>
+
+  <action id="org.cachyos-center.packages.upgrade">
+    <description>Update the system (full pacman -Syu)</description>
+    <description xml:lang="de">System aktualisieren (vollständiges pacman -Syu)</description>
+    <message>Authentication is required to update all packages of the system.</message>
+    <message xml:lang="de">Zum Aktualisieren aller Pakete des Systems ist eine Authentifizierung erforderlich.</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+  </action>
+
+  <action id="org.cachyos-center.packages.install">
+    <description>Install a repository package</description>
+    <description xml:lang="de">Paket aus einem Repository installieren</description>
+    <message>Authentication is required to install a package (this also updates the system).</message>
+    <message xml:lang="de">Zum Installieren eines Pakets (dabei wird auch das System aktualisiert) ist eine Authentifizierung erforderlich.</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+  </action>
+
+  <action id="org.cachyos-center.packages.remove">
+    <description>Remove a package</description>
+    <description xml:lang="de">Paket entfernen</description>
+    <message>Authentication is required to remove a package.</message>
+    <message xml:lang="de">Zum Entfernen eines Pakets ist eine Authentifizierung erforderlich.</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+  </action>
+
+  <action id="org.cachyos-center.autoupdate.configure">
+    <description>Configure automatic updates</description>
+    <description xml:lang="de">Automatische Updates konfigurieren</description>
+    <message>Authentication is required to change the automatic update settings.</message>
+    <message xml:lang="de">Zum Ändern der automatischen Updates ist eine Authentifizierung erforderlich.</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+  </action>
+</policyconfig>

@@ -1,0 +1,6 @@
+# cachyos-center: directories written by the privileged helper
+d /etc/cachyos-center 0755 root root -
+d /etc/systemd/system/cachyos-center-preflight.timer.d 0755 root root -
+d /var/lib/cachyos-center 0755 root root -
+d /var/lib/cachyos-center/operations 0755 root root -
+d /var/log/cachyos-center 0755 root root -

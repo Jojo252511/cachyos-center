@@ -1,0 +1,105 @@
+# Maintainer: cachyos-center contributors <https://github.com/Jojo252511/cachyos-center>
+#
+# Build from the published tag:   makepkg -si
+# Build from this working tree:    CC_LOCAL_SOURCE=1 makepkg -f
+#
+# The package deliberately does not depend on a versioned libalpm soname:
+# libalpm is loaded at runtime by /usr/lib/cachyos-center/libcachyos_center_alpm.so.
+# After a pacman update with a new soname the app keeps starting and shows
+# that package functions are disabled until cachyos-center is rebuilt,
+# instead of blocking the pacman update.
+
+pkgname=cachyos-center
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Systemübersicht, sichere Updates und Softwareverwaltung für CachyOS mit Hyprland (Community-Projekt)"
+arch=('x86_64')
+url="https://github.com/Jojo252511/cachyos-center"
+license=('GPL-3.0-or-later')
+depends=(
+  'pacman'
+  'pacman-contrib'
+  'fakeroot'
+  'polkit'
+  'dbus'
+  'systemd'
+  'curl'
+  'sqlite'
+  'gtk3'
+  'webkit2gtk-4.1'
+  'libsoup3'
+  'hicolor-icon-theme'
+)
+optdepends=(
+  'snapper: optional snapshot before a system upgrade (Btrfs)'
+  'snap-pac: automatic pre/post snapshots for every pacman transaction'
+  'pacman-offline: installation on the next reboot (in development)'
+  'xdg-desktop-portal: follow the desktop color scheme'
+)
+makedepends=('cargo' 'git' 'nodejs' 'npm' 'pkgconf')
+install=cachyos-center.install
+options=('!lto' '!debug')
+
+if [[ -n "${CC_LOCAL_SOURCE:-}" ]]; then
+  source=("$pkgname::git+file://$(realpath "$startdir/../..")")
+else
+  source=("$pkgname::git+https://github.com/Jojo252511/cachyos-center.git#tag=v$pkgver")
+fi
+sha256sums=('SKIP')
+
+prepare() {
+  cd "$pkgname"
+  export CARGO_HOME="$srcdir/cargo-home"
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+  cd apps/desktop
+  npm ci --no-audit --no-fund
+}
+
+build() {
+  cd "$pkgname"
+  export CARGO_HOME="$srcdir/cargo-home"
+  export CARGO_TARGET_DIR=target
+  (cd apps/desktop && npm run build)
+  cargo build --frozen --release --workspace --features cachyos-center-desktop/custom-protocol
+}
+
+check() {
+  cd "$pkgname"
+  export CARGO_HOME="$srcdir/cargo-home"
+  export CARGO_TARGET_DIR=target
+  # Unit tests only; the system and sandbox integration tests run in CI.
+  cargo test --frozen --release --workspace --lib --bins
+}
+
+package() {
+  cd "$pkgname"
+  local p=packaging/arch
+
+  install -Dm755 target/release/cachyos-center "$pkgdir/usr/bin/cachyos-center"
+  install -Dm755 target/release/cachyos-center-mcp "$pkgdir/usr/bin/cachyos-center-mcp"
+  install -Dm755 target/release/cachyos-center-helper "$pkgdir/usr/lib/cachyos-center/cachyos-center-helper"
+  install -Dm755 target/release/libcachyos_center_alpm.so "$pkgdir/usr/lib/cachyos-center/libcachyos_center_alpm.so"
+
+  install -Dm644 "$p/cachyos-center.desktop" "$pkgdir/usr/share/applications/cachyos-center.desktop"
+  install -Dm644 apps/desktop/src-tauri/icons/icon.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/cachyos-center.svg"
+  install -Dm644 apps/desktop/src-tauri/icons/32x32.png "$pkgdir/usr/share/icons/hicolor/32x32/apps/cachyos-center.png"
+  install -Dm644 apps/desktop/src-tauri/icons/128x128.png "$pkgdir/usr/share/icons/hicolor/128x128/apps/cachyos-center.png"
+  install -Dm644 apps/desktop/src-tauri/icons/128x128@2x.png "$pkgdir/usr/share/icons/hicolor/256x256/apps/cachyos-center.png"
+  install -Dm644 apps/desktop/src-tauri/icons/icon.png "$pkgdir/usr/share/icons/hicolor/512x512/apps/cachyos-center.png"
+
+  install -Dm644 "$p/org.cachyos_center.Packages1.service" "$pkgdir/usr/share/dbus-1/system-services/org.cachyos_center.Packages1.service"
+  install -Dm644 "$p/org.cachyos_center.Packages1.conf" "$pkgdir/usr/share/dbus-1/system.d/org.cachyos_center.Packages1.conf"
+  install -Dm644 "$p/org.cachyos-center.policy" "$pkgdir/usr/share/polkit-1/actions/org.cachyos-center.policy"
+
+  install -Dm644 -t "$pkgdir/usr/lib/systemd/system" \
+    "$p/systemd/cachyos-center-helper.service" \
+    "$p/systemd/cachyos-center-preflight.service" \
+    "$p/systemd/cachyos-center-preflight.timer"
+  install -Dm644 -t "$pkgdir/usr/lib/systemd/user" \
+    "$p/systemd/user/cachyos-center-notify.path" \
+    "$p/systemd/user/cachyos-center-notify.service"
+  install -Dm644 "$p/cachyos-center.tmpfiles" "$pkgdir/usr/lib/tmpfiles.d/cachyos-center.conf"
+
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 -t "$pkgdir/usr/share/doc/$pkgname" README.md docs/*.md
+}
