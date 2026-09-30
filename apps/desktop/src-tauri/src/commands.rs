@@ -342,11 +342,13 @@ async fn set_user_notify_unit(enable: bool) {
             let _: (bool, Vec<(String, String, String)>) = proxy
                 .call("EnableUnitFiles", &(vec![unit], false, true))
                 .await?;
-            let _: zbus::zvariant::OwnedObjectPath = proxy.call("StartUnit", &(unit, "replace")).await?;
+            let _: zbus::zvariant::OwnedObjectPath =
+                proxy.call("StartUnit", &(unit, "replace")).await?;
         } else {
             let _: Vec<(String, String, String)> =
                 proxy.call("DisableUnitFiles", &(vec![unit], false)).await?;
-            let _: zbus::zvariant::OwnedObjectPath = proxy.call("StopUnit", &(unit, "replace")).await?;
+            let _: zbus::zvariant::OwnedObjectPath =
+                proxy.call("StopUnit", &(unit, "replace")).await?;
         }
         Ok(())
     }
@@ -357,7 +359,10 @@ async fn set_user_notify_unit(enable: bool) {
 }
 
 #[tauri::command]
-pub async fn set_auto_update_policy(state: State<'_, AppState>, config: AutoUpdateConfig) -> CmdResult<AutoUpdateStatus> {
+pub async fn set_auto_update_policy(
+    state: State<'_, AppState>,
+    config: AutoUpdateConfig,
+) -> CmdResult<AutoUpdateStatus> {
     config.validate()?;
     state.helper.set_policy(&config).await?;
     set_user_notify_unit(config.policy != cachyos_center_core::policy::AutoUpdatePolicy::Off).await;
