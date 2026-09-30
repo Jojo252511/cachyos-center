@@ -1,0 +1,25 @@
+[package]
+name = "cachyos-center-packages"
+description = "Package service of cachyos-center: libalpm bridge loader, update check, pacman log"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+cachyos-center-core.workspace = true
+libc.workspace = true
+libloading.workspace = true
+pacmanconf.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true
