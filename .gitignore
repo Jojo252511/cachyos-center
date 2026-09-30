@@ -1,0 +1,13 @@
+/target/
+**/node_modules/
+/apps/desktop/dist/
+/apps/desktop/src-tauri/gen/
+/apps/desktop/src-tauri/target/
+/packaging/arch/src/
+/packaging/arch/pkg/
+/packaging/arch/*.pkg.tar.*
+/packaging/arch/cachyos-center/
+*.log
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,79 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/core",
+    "crates/system",
+    "crates/packages",
+    "crates/alpm-bridge",
+    "crates/service",
+    "crates/helper",
+    "crates/mcp",
+    # "apps/desktop/src-tauri",  # enabled once the Tauri app exists
+]
+default-members = [
+    "crates/core",
+    "crates/system",
+    "crates/packages",
+    "crates/alpm-bridge",
+    "crates/service",
+    "crates/helper",
+    "crates/mcp",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/Jojo252511/cachyos-center"
+homepage = "https://github.com/Jojo252511/cachyos-center"
+authors = ["cachyos-center contributors"]
+
+[workspace.dependencies]
+# Internal crates
+cachyos-center-core = { path = "crates/core" }
+cachyos-center-system = { path = "crates/system" }
+cachyos-center-packages = { path = "crates/packages" }
+cachyos-center-service = { path = "crates/service" }
+
+# Versions checked against crates.io on 2026-09-30 and locked in Cargo.lock.
+alpm = "5.0.2"
+anyhow = "1.0.104"
+clap = { version = "4.6.7", default-features = false, features = ["std", "derive", "help", "usage", "error-context"] }
+hex = "0.4.3"
+libc = "0.2.189"
+libloading = "0.9.0"
+pacmanconf = "3.1.0"
+quick-xml = "0.42.0"
+rmcp = { version = "3.5.0", default-features = false }
+rusqlite = "0.40.2"
+schemars = "1.2.2"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+sha2 = "0.11.0"
+tempfile = "3.27.0"
+thiserror = "2.0.21"
+tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "time", "sync", "io-std", "io-util", "process", "signal"] }
+toml = "1.1.6"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
+ts-rs = "12.0.1"
+uuid = { version = "1.26.1", features = ["v4"] }
+zbus = { version = "5.19.0", default-features = false, features = ["tokio"] }
+zbus_polkit = { version = "5.1.0", default-features = false, features = ["tokio"] }
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+missing_debug_implementations = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+
+[workspace.lints.clippy]
+dbg_macro = "warn"
+todo = "warn"
+unwrap_used = "warn"
+print_stdout = "warn"
+
+[profile.release]
+lto = "thin"
+codegen-units = 4
+strip = "debuginfo"
