@@ -40,14 +40,18 @@ mod tests {
     fn host_config_contains_absolute_path() {
         let cfg = host_config("/usr/bin/cachyos-center-mcp");
         let v: serde_json::Value = serde_json::from_str(&cfg).unwrap();
-        assert_eq!(v["mcpServers"]["cachyos-center"]["command"], "/usr/bin/cachyos-center-mcp");
+        assert_eq!(
+            v["mcpServers"]["cachyos-center"]["command"],
+            "/usr/bin/cachyos-center-mcp"
+        );
         assert_eq!(v["mcpServers"]["cachyos-center"]["type"], "stdio");
     }
 
     #[test]
     fn no_mutating_tool_names() {
         const VERBS: [&str; 10] = [
-            "install", "upgrade", "remove", "delete", "write", "exec", "shell", "apply", "run", "set",
+            "install", "upgrade", "remove", "delete", "write", "exec", "shell", "apply", "run",
+            "set",
         ];
         for name in TOOL_NAMES {
             for segment in name.split('_') {

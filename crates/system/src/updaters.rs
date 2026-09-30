@@ -43,6 +43,75 @@ pub const OFFLINE_CONF: &str = "/etc/pacman.d/offline.conf";
 pub const SYSTEM_UPDATE_LINK: &str = "/system-update";
 pub const PACMAN_CACHE: &str = "/var/cache/pacman/pkg";
 
+/// Stable identifiers of reasons that block `PrepareForNextReboot`.
+pub mod blocker {
+    pub const HELPER_MISSING: &str = "helperMissing";
+    pub const EXPERIMENTAL_LOCKED: &str = "experimentalLocked";
+    pub const PACMAN_OFFLINE_MISSING: &str = "pacmanOfflineMissing";
+    pub const OFFLINE_CONFIG_UNVERIFIABLE: &str = "offlineConfigUnverifiable";
+    pub const EXTERNAL_PREPARE_TIMER: &str = "externalPrepareTimer";
+    pub const OFFLINE_CONF_HOLDS_PACKAGES: &str = "offlineConfHoldsPackages";
+}
+
+/// `PrepareForNextReboot` is still in development (concept: "Bis dahin in
+/// Builds sichtbar als in Entwicklung") and has to be unlocked by the
+/// administrator in `/etc/cachyos-center/experimental.toml` on test systems.
+pub fn experimental_offline_enabled(path: &Path) -> bool {
+    std::fs::read_to_string(path)
+        .ok()
+        .and_then(|t| toml_bool(&t, "offline_auto_update"))
+        .unwrap_or(false)
+}
+
+/// Minimal parser for `key = true|false` lines (the file is root-owned and tiny).
+fn toml_bool(text: &str, key: &str) -> Option<bool> {
+    let mut value = None;
+    for line in text.lines() {
+        let line = line.split('#').next().unwrap_or("").trim();
+        if let Some((k, v)) = line.split_once('=')
+            && k.trim() == key
+        {
+            value = match v.trim() {
+                "true" => Some(true),
+                "false" => Some(false),
+                _ => None,
+            };
+        }
+    }
+    value
+}
+
+/// Reasons why `PrepareForNextReboot` cannot be activated (ids from [`blocker`]).
+pub fn prepare_blockers(
+    helper: bool,
+    experimental: bool,
+    offline: &OfflineUpdateStatus,
+) -> Vec<String> {
+    let mut out = Vec::new();
+    if !helper {
+        out.push(blocker::HELPER_MISSING.to_string());
+    }
+    if !experimental {
+        out.push(blocker::EXPERIMENTAL_LOCKED.to_string());
+    }
+    if !offline.installed {
+        out.push(blocker::PACMAN_OFFLINE_MISSING.to_string());
+    }
+    if !offline.configuration_verifiable {
+        out.push(blocker::OFFLINE_CONFIG_UNVERIFIABLE.to_string());
+    }
+    if offline.prepare_timer_active {
+        out.push(blocker::EXTERNAL_PREPARE_TIMER.to_string());
+    }
+    if offline.offline_conf_included {
+        // The combination of IgnorePkg for kernels (offline.conf) and manual
+        // package actions has not been verified in a VM yet (concept 5.6):
+        // the automatic mode stays disabled for this configuration.
+        out.push(blocker::OFFLINE_CONF_HOLDS_PACKAGES.to_string());
+    }
+    out
+}
+
 /// Installed update mechanisms other than cachyos-center.
 pub fn external_updaters() -> Vec<ExternalUpdater> {
     KNOWN_UPDATERS
@@ -196,5 +265,42 @@ mod tests {
             false,
         );
         assert!(!other.prepared, "a foreign system-update is not ours");
+    }
+
+    #[test]
+    fn experimental_switch() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path().join("experimental.toml");
+        assert!(!experimental_offline_enabled(&p));
+        std::fs::write(&p, "# test system\noffline_auto_update = true\n").unwrap();
+        assert!(experimental_offline_enabled(&p));
+        std::fs::write(&p, "offline_auto_update = \"yes\"\n").unwrap();
+        assert!(!experimental_offline_enabled(&p));
+    }
+
+    #[test]
+    fn blockers() {
+        let ok = OfflineUpdateStatus {
+            installed: true,
+            configuration_verifiable: true,
+            ..OfflineUpdateStatus::default()
+        };
+        assert!(prepare_blockers(true, true, &ok).is_empty());
+        let b = prepare_blockers(false, false, &OfflineUpdateStatus::default());
+        assert!(b.contains(&blocker::HELPER_MISSING.to_string()));
+        assert!(b.contains(&blocker::EXPERIMENTAL_LOCKED.to_string()));
+        assert!(b.contains(&blocker::PACMAN_OFFLINE_MISSING.to_string()));
+        let external = OfflineUpdateStatus {
+            prepare_timer_active: true,
+            offline_conf_included: true,
+            ..ok
+        };
+        assert_eq!(
+            prepare_blockers(true, true, &external),
+            vec![
+                blocker::EXTERNAL_PREPARE_TIMER,
+                blocker::OFFLINE_CONF_HOLDS_PACKAGES
+            ]
+        );
     }
 }

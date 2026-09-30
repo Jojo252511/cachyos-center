@@ -35,6 +35,37 @@ pub mod actions {
 /// Upper bound for method arguments that carry lists or strings.
 pub const MAX_ARGUMENT_LEN: usize = 256;
 
+/// Prefix of the helper's D-Bus error names (`<prefix>.<Code>`).
+pub const ERROR_PREFIX: &str = "org.cachyos_center.Packages1.Error";
+
+/// Maps a D-Bus error name and message back to an [`crate::AppError`] (client side).
+pub fn app_error_from_dbus(name: &str, message: Option<&str>) -> crate::AppError {
+    if let Some(msg) = message
+        && let Ok(err) = serde_json::from_str::<crate::AppError>(msg)
+    {
+        return err;
+    }
+    let code = name
+        .rsplit('.')
+        .next()
+        .and_then(|suffix| {
+            let snake: String = suffix
+                .chars()
+                .enumerate()
+                .flat_map(|(i, c)| {
+                    if c.is_ascii_uppercase() && i > 0 {
+                        vec!['_', c]
+                    } else {
+                        vec![c.to_ascii_uppercase()]
+                    }
+                })
+                .collect();
+            serde_json::from_str::<crate::ErrorCode>(&format!("\"{snake}\"")).ok()
+        })
+        .unwrap_or(crate::ErrorCode::Internal);
+    crate::AppError::new(code, message.unwrap_or(name).to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
