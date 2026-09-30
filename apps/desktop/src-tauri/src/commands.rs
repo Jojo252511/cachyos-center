@@ -325,13 +325,42 @@ pub async fn start_remove(
     Ok(id)
 }
 
+/// Enables or disables the user unit that turns timer results into desktop
+/// notifications (user level, no privileges). Best effort.
+async fn set_user_notify_unit(enable: bool) {
+    let result: zbus::Result<()> = async {
+        let conn = zbus::Connection::session().await?;
+        let proxy = zbus::Proxy::new(
+            &conn,
+            "org.freedesktop.systemd1",
+            "/org/freedesktop/systemd1",
+            "org.freedesktop.systemd1.Manager",
+        )
+        .await?;
+        let unit = cachyos_center_core::dbus::NOTIFY_PATH_UNIT;
+        if enable {
+            let _: (bool, Vec<(String, String, String)>) = proxy
+                .call("EnableUnitFiles", &(vec![unit], false, true))
+                .await?;
+            let _: zbus::zvariant::OwnedObjectPath = proxy.call("StartUnit", &(unit, "replace")).await?;
+        } else {
+            let _: Vec<(String, String, String)> =
+                proxy.call("DisableUnitFiles", &(vec![unit], false)).await?;
+            let _: zbus::zvariant::OwnedObjectPath = proxy.call("StopUnit", &(unit, "replace")).await?;
+        }
+        Ok(())
+    }
+    .await;
+    if let Err(e) = result {
+        tracing::info!("notification unit not changed: {e}");
+    }
+}
+
 #[tauri::command]
-pub async fn set_auto_update_policy(
-    state: State<'_, AppState>,
-    config: AutoUpdateConfig,
-) -> CmdResult<AutoUpdateStatus> {
+pub async fn set_auto_update_policy(state: State<'_, AppState>, config: AutoUpdateConfig) -> CmdResult<AutoUpdateStatus> {
     config.validate()?;
     state.helper.set_policy(&config).await?;
+    set_user_notify_unit(config.policy != cachyos_center_core::policy::AutoUpdatePolicy::Off).await;
     get_auto_update_status(state).await
 }
 
