@@ -46,9 +46,12 @@ mod tests {
 
     #[test]
     fn no_mutating_tool_names() {
+        const VERBS: [&str; 10] = [
+            "install", "upgrade", "remove", "delete", "write", "exec", "shell", "apply", "run", "set",
+        ];
         for name in TOOL_NAMES {
-            for word in ["install", "upgrade", "remove", "delete", "write", "exec", "shell", "apply"] {
-                assert!(!name.contains(word), "{name}");
+            for segment in name.split('_') {
+                assert!(!VERBS.contains(&segment), "{name}");
             }
         }
     }
