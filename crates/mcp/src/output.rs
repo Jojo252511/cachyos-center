@@ -737,7 +737,7 @@ impl From<HealthReport> for HealthOutput {
             pacsave_count: r.pacsave_count,
             lock: r.lock.into(),
             reboot_recommended: r.reboot_recommended,
-            reboot_reasons: r.reboot_reasons,
+            reboot_reasons: r.reboot_reasons.iter().map(|x| x.describe()).collect(),
             offline_update: OfflineUpdateOutput {
                 installed: r.offline_update.installed,
                 prepared: r.offline_update.prepared,
@@ -757,7 +757,11 @@ impl From<HealthReport> for HealthOutput {
                     description: u.description,
                 })
                 .collect(),
-            update_blockers: r.update_blockers,
+            update_blockers: r
+                .update_blockers
+                .iter()
+                .map(|b| b.describe().to_string())
+                .collect(),
             package_cache_bytes: r.package_cache_bytes,
             snapshot: SnapshotOutput {
                 btrfs_root: r.snapshot.btrfs_root,

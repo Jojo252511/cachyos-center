@@ -3,7 +3,8 @@
 use cachyos_center_core::Timestamp;
 use cachyos_center_core::classify;
 use cachyos_center_core::health::{
-    ConfigFileHint, HealthItem, HealthItemKind, HealthReport, Severity, SnapshotSupport,
+    ConfigFileHint, HealthItem, HealthItemKind, HealthReport, RebootReason, Severity,
+    SnapshotSupport, UpdateBlocker,
 };
 use cachyos_center_core::history::LogOutcome;
 use cachyos_center_core::news::NewsStatus;
@@ -57,10 +58,10 @@ pub fn reboot_reasons(
     kernel: &KernelInfo,
     log: Option<&LogSummary>,
     now: Timestamp,
-) -> Vec<String> {
+) -> Vec<RebootReason> {
     let mut reasons = Vec::new();
     if kernel.modules_missing {
-        reasons.push("running kernel was replaced by an update".to_string());
+        reasons.push(RebootReason::KernelReplaced);
     }
     let boot = now - i64::try_from(kernel.uptime_seconds).unwrap_or(0);
     if let Some(log) = log {
@@ -78,7 +79,7 @@ pub fn reboot_reasons(
         pkgs.sort();
         pkgs.dedup();
         if !pkgs.is_empty() {
-            reasons.push(format!("updated since boot: {}", pkgs.join(", ")));
+            reasons.push(RebootReason::UpdatedSinceBoot { packages: pkgs });
         }
     }
     reasons
@@ -124,7 +125,11 @@ pub fn build(input: HealthInputs<'_>) -> HealthReport {
         items.push(item(
             HealthItemKind::RebootRecommended,
             severity,
-            reasons.join("; "),
+            reasons
+                .iter()
+                .map(RebootReason::describe)
+                .collect::<Vec<_>>()
+                .join("; "),
             None,
         ));
     }
@@ -142,7 +147,7 @@ pub fn build(input: HealthInputs<'_>) -> HealthReport {
             detail,
             None,
         ));
-        blockers.push("package manager is busy (db.lck)".to_string());
+        blockers.push(UpdateBlocker::PackageManagerBusy);
     }
     if let Some(problem) = input.log.and_then(|l| l.last_transaction_problem()) {
         let kind = match problem.outcome {
@@ -155,7 +160,7 @@ pub fn build(input: HealthInputs<'_>) -> HealthReport {
             "the last pacman transaction did not complete; check the package state",
             None,
         ));
-        blockers.push("last pacman transaction did not complete".to_string());
+        blockers.push(UpdateBlocker::LastTransactionIncomplete);
     } else if let Some(op) = input
         .recent_operations
         .iter()
@@ -178,7 +183,7 @@ pub fn build(input: HealthInputs<'_>) -> HealthReport {
             None,
         ));
         if op.state == OperationState::NeedsAttention {
-            blockers.push("last operation needs attention".to_string());
+            blockers.push(UpdateBlocker::LastOperationNeedsAttention);
         }
     }
     if let Some(bytes) = input.package_cache_bytes
@@ -198,7 +203,7 @@ pub fn build(input: HealthInputs<'_>) -> HealthReport {
             reason.clone(),
             None,
         ));
-        blockers.push("package functions are disabled".to_string());
+        blockers.push(UpdateBlocker::PackageBackendUnavailable);
     }
     match input.check.status {
         CheckStatus::PrerequisiteMissing => {
@@ -208,7 +213,7 @@ pub fn build(input: HealthInputs<'_>) -> HealthReport {
                 format!("missing: {}", input.check.missing_prerequisites.join(", ")),
                 None,
             ));
-            blockers.push("update check prerequisites are missing".to_string());
+            blockers.push(UpdateBlocker::PrerequisitesMissing);
         }
         CheckStatus::Failed => {
             let detail = input
@@ -270,8 +275,7 @@ pub fn build(input: HealthInputs<'_>) -> HealthReport {
             Some(active_external.len() as u32),
         ));
         if input.offline.prepare_timer_active {
-            blockers
-                .push("pacman-offline-prepare.timer is active (externally managed)".to_string());
+            blockers.push(UpdateBlocker::ExternalPrepareTimer);
         }
     }
     match input.news {
@@ -283,7 +287,7 @@ pub fn build(input: HealthInputs<'_>) -> HealthReport {
                     "unread Arch Linux/CachyOS news",
                     Some(news.unread_count),
                 ));
-                blockers.push("unread news".to_string());
+                blockers.push(UpdateBlocker::NewsUnread);
             }
             if !news.errors.is_empty() || news.fetched_at.is_none() {
                 items.push(item(
@@ -292,11 +296,11 @@ pub fn build(input: HealthInputs<'_>) -> HealthReport {
                     "news check not possible",
                     None,
                 ));
-                blockers.push("news check not possible".to_string());
+                blockers.push(UpdateBlocker::NewsUnavailable);
             }
         }
-        Some(_) => blockers.push("news check disabled".to_string()),
-        None => blockers.push("news check not possible".to_string()),
+        Some(_) => blockers.push(UpdateBlocker::NewsDisabled),
+        None => blockers.push(UpdateBlocker::NewsUnavailable),
     }
     if let Some(free) = input.root_available {
         if free < LOW_SPACE_CRITICAL {
@@ -306,7 +310,7 @@ pub fn build(input: HealthInputs<'_>) -> HealthReport {
                 "less than 1 GiB free on /",
                 None,
             ));
-            blockers.push("not enough free disk space".to_string());
+            blockers.push(UpdateBlocker::LowDiskSpace);
         } else if free < LOW_SPACE_WARNING {
             items.push(item(
                 HealthItemKind::LowDiskSpace,
@@ -431,19 +435,15 @@ mod tests {
         assert_eq!(report.items.first().unwrap().severity, Severity::Critical);
         assert_eq!(report.pacnew_count, 1);
         assert!(report.reboot_recommended);
-        assert!(report.update_blockers.iter().any(|b| b.contains("db.lck")));
-        assert!(
-            report
-                .update_blockers
-                .iter()
-                .any(|b| b.contains("unread news"))
-        );
-        assert!(
-            report
-                .update_blockers
-                .iter()
-                .any(|b| b.contains("disk space"))
-        );
+        for blocker in [
+            UpdateBlocker::PackageManagerBusy,
+            UpdateBlocker::NewsUnread,
+            UpdateBlocker::LowDiskSpace,
+            UpdateBlocker::PackageBackendUnavailable,
+        ] {
+            assert!(report.update_blockers.contains(&blocker), "{blocker:?}");
+        }
+        assert_eq!(report.reboot_reasons, vec![RebootReason::KernelReplaced]);
     }
 
     #[test]
@@ -505,6 +505,12 @@ mod tests {
             last_full_upgrade: Some(9_010),
         };
         let reasons = reboot_reasons(&k, Some(&log), 10_000);
-        assert_eq!(reasons, vec!["updated since boot: amd-ucode".to_string()]);
+        assert_eq!(
+            reasons,
+            vec![RebootReason::UpdatedSinceBoot {
+                packages: vec!["amd-ucode".into()]
+            }]
+        );
+        assert_eq!(reasons[0].describe(), "updated since boot: amd-ucode");
     }
 }

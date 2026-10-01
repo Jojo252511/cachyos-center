@@ -52,6 +52,71 @@ pub struct HealthItem {
     pub count: Option<u32>,
 }
 
+/// Why a reboot is recommended. The UI renders localized texts.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+#[ts(export)]
+pub enum RebootReason {
+    /// The modules of the running kernel were removed by a kernel update.
+    KernelReplaced,
+    /// Packages that usually need a reboot were updated since boot.
+    UpdatedSinceBoot { packages: Vec<String> },
+}
+
+impl RebootReason {
+    /// English description (MCP output, logs).
+    pub fn describe(&self) -> String {
+        match self {
+            Self::KernelReplaced => "running kernel was replaced by an update".to_string(),
+            Self::UpdatedSinceBoot { packages } => {
+                format!("updated since boot: {}", packages.join(", "))
+            }
+        }
+    }
+}
+
+/// Stable identifiers of reasons that block an unattended update preparation.
+/// The UI renders localized texts for them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum UpdateBlocker {
+    PackageManagerBusy,
+    LastTransactionIncomplete,
+    LastOperationNeedsAttention,
+    PackageBackendUnavailable,
+    PrerequisitesMissing,
+    ExternalPrepareTimer,
+    NewsUnread,
+    NewsUnavailable,
+    NewsDisabled,
+    LowDiskSpace,
+}
+
+impl UpdateBlocker {
+    /// English description (MCP output, logs).
+    pub fn describe(self) -> &'static str {
+        match self {
+            Self::PackageManagerBusy => "package manager is busy (db.lck)",
+            Self::LastTransactionIncomplete => "last pacman transaction did not complete",
+            Self::LastOperationNeedsAttention => "last operation needs attention",
+            Self::PackageBackendUnavailable => "package functions are disabled",
+            Self::PrerequisitesMissing => "update check prerequisites are missing",
+            Self::ExternalPrepareTimer => {
+                "pacman-offline-prepare.timer is active (externally managed)"
+            }
+            Self::NewsUnread => "unread news",
+            Self::NewsUnavailable => "news check not possible",
+            Self::NewsDisabled => "news check disabled",
+            Self::LowDiskSpace => "not enough free disk space",
+        }
+    }
+}
+
 /// A `.pacnew`/`.pacsave` file below `/etc`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
@@ -93,14 +158,14 @@ pub struct HealthReport {
     pub config_files: Vec<ConfigFileHint>,
     pub lock: LockStatus,
     pub reboot_recommended: bool,
-    pub reboot_reasons: Vec<String>,
+    pub reboot_reasons: Vec<RebootReason>,
     #[ts(type = "number | null")]
     pub package_cache_bytes: Option<u64>,
     pub snapshot: SnapshotSupport,
     pub offline_update: OfflineUpdateStatus,
     pub external_updaters: Vec<ExternalUpdater>,
     /// Reasons that currently block an unattended update preparation.
-    pub update_blockers: Vec<String>,
+    pub update_blockers: Vec<UpdateBlocker>,
     #[ts(type = "number")]
     pub collected_at: Timestamp,
 }

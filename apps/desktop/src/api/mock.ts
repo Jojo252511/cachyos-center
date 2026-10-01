@@ -35,10 +35,12 @@ import type { PackageRecord } from '../bindings/PackageRecord';
 import type { PackageRef } from '../bindings/PackageRef';
 import type { PackageSummary } from '../bindings/PackageSummary';
 import type { PlanEntry } from '../bindings/PlanEntry';
+import type { RebootReason } from '../bindings/RebootReason';
 import type { Settings } from '../bindings/Settings';
 import type { SnapshotSupport } from '../bindings/SnapshotSupport';
 import type { SystemInfo } from '../bindings/SystemInfo';
 import type { TransactionPlan } from '../bindings/TransactionPlan';
+import type { UpdateBlocker } from '../bindings/UpdateBlocker';
 import type { UpdateCheckResult } from '../bindings/UpdateCheckResult';
 import type { InvokeArgs, Transport, Unlisten } from './client';
 import {
@@ -124,7 +126,7 @@ interface MockState {
   autoUpdate: AutoUpdateStatus;
   experimentalUnlocked: boolean;
   lastFullUpgrade: number | null;
-  rebootReasons: string[];
+  rebootReasons: RebootReason[];
   configFiles: ConfigFileHint[];
   snapshot: SnapshotSupport;
   operations: Map<string, MockOperation>;
@@ -136,6 +138,13 @@ interface MockState {
 
 const nowSec = () => Math.floor(Date.now() / 1000);
 const clone = <T>(value: T): T => structuredClone(value);
+
+/** English technical detail, as produced by the backend (`RebootReason::describe`). */
+function describeRebootReason(reason: RebootReason): string {
+  return reason.kind === 'kernelReplaced'
+    ? 'running kernel was replaced by an update'
+    : `updated since boot: ${reason.packages.join(', ')}`;
+}
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 function appError(code: ErrorCode, message: string, detail: string | null = null): AppError {
@@ -391,32 +400,32 @@ function healthReport(state: MockState): HealthReport {
   const items: HealthItem[] = [];
   const updates = updatesResult(state);
   const news = newsStatus(state);
-  const blockers: string[] = [];
+  const blockers: UpdateBlocker[] = [];
   const pacnew = state.configFiles.filter((f) => f.kind === 'pacnew').length;
   const pacsave = state.configFiles.filter((f) => f.kind === 'pacsave').length;
   const root = state.system.disks.find((d) => d.mountPoint === '/');
   if (pacnew > 0) items.push({ kind: 'pacnewFiles', severity: 'warning', detail: 'configuration files need a manual merge', count: pacnew });
   if (pacsave > 0) items.push({ kind: 'pacsaveFiles', severity: 'info', detail: 'saved configuration files of removed packages', count: pacsave });
   if (state.rebootReasons.length > 0) {
-    items.push({ kind: 'rebootRecommended', severity: state.system.kernel.modulesMissing ? 'warning' : 'info', detail: state.rebootReasons.join('; '), count: null });
+    items.push({ kind: 'rebootRecommended', severity: state.system.kernel.modulesMissing ? 'warning' : 'info', detail: state.rebootReasons.map(describeRebootReason).join('; '), count: null });
   }
   if (state.lock.state === 'locked') {
     items.push({ kind: 'packageManagerLocked', severity: 'warning', detail: 'another package manager is running', count: null });
-    blockers.push('package manager is busy (db.lck)');
+    blockers.push('packageManagerBusy');
   }
   const last = lastOperation(state)?.op;
   if (last && (last.state === 'failed' || last.state === 'needsAttention')) {
     items.push({ kind: 'lastOperationFailed', severity: last.state === 'needsAttention' ? 'critical' : 'warning', detail: last.summary, count: null });
-    if (last.state === 'needsAttention') blockers.push('last operation needs attention');
+    if (last.state === 'needsAttention') blockers.push('lastOperationNeedsAttention');
   }
   items.push({ kind: 'packageCacheLarge', severity: 'info', detail: 'package cache is large (paccache can clean it)', count: null });
   if (state.appInfo.backend.state === 'unavailable') {
     items.push({ kind: 'packageBackendUnavailable', severity: 'critical', detail: state.appInfo.backend.reason, count: null });
-    blockers.push('package functions are disabled');
+    blockers.push('packageBackendUnavailable');
   }
   if (updates.status === 'prerequisiteMissing') {
     items.push({ kind: 'prerequisiteMissing', severity: 'warning', detail: 'missing: pacman-contrib', count: null });
-    blockers.push('update check prerequisites are missing');
+    blockers.push('prerequisitesMissing');
   } else if (updates.status === 'failed') {
     items.push({ kind: 'updateCheckFailed', severity: 'warning', detail: updates.error?.message ?? '', count: null });
   } else if (updates.status === 'stale') {
@@ -430,18 +439,18 @@ function healthReport(state: MockState): HealthReport {
   const external = state.autoUpdate.externalUpdaters.filter((u) => u.active);
   if (external.length > 0) {
     items.push({ kind: 'externalUpdaterActive', severity: 'info', detail: external.map((u) => u.name).join(', '), count: external.length });
-    if (offline.prepareTimerActive) blockers.push('pacman-offline-prepare.timer is active (externally managed)');
+    if (offline.prepareTimerActive) blockers.push('externalPrepareTimer');
   }
   if (news.disabled) {
-    blockers.push('news check disabled');
+    blockers.push('newsDisabled');
   } else {
     if (news.unreadCount > 0) {
       items.push({ kind: 'newsUnread', severity: 'warning', detail: 'unread Arch Linux/CachyOS news', count: news.unreadCount });
-      blockers.push('unread news');
+      blockers.push('newsUnread');
     }
     if (news.errors.length > 0 || news.fetchedAt === null) {
       items.push({ kind: 'newsUnavailable', severity: 'info', detail: 'news check not possible', count: null });
-      blockers.push('news check not possible');
+      blockers.push('newsUnavailable');
     }
   }
   if (root && root.availableBytes < 5 * GIB) {
@@ -456,7 +465,7 @@ function healthReport(state: MockState): HealthReport {
     configFiles: clone(state.configFiles),
     lock: clone(state.lock),
     rebootRecommended: state.rebootReasons.length > 0,
-    rebootReasons: [...state.rebootReasons],
+    rebootReasons: clone(state.rebootReasons),
     packageCacheBytes: Math.round(7.8 * GIB),
     snapshot: clone(state.snapshot),
     offlineUpdate: clone(offline),
@@ -779,10 +788,10 @@ function applySuccess(state: MockState, mop: MockOperation): void {
     state.check = { status: 'fresh', checkedAt: now, attemptedAt: now, error: null };
     state.lastFullUpgrade = now;
     const reboot = upgraded.filter((n) => UPDATE_DEFS.find((d) => d.name === n)?.flags.includes('rebootRecommended'));
-    if (reboot.length > 0) state.rebootReasons = [`updated since boot: ${reboot.join(', ')}`];
+    if (reboot.length > 0) state.rebootReasons = [{ kind: 'updatedSinceBoot', packages: reboot }];
     if (upgraded.includes('linux-cachyos')) {
       state.system.kernel.modulesMissing = true;
-      state.rebootReasons.unshift('running kernel was replaced by an update');
+      state.rebootReasons.unshift({ kind: 'kernelReplaced' });
     }
   }
   if (upgraded.includes('systemd')) {

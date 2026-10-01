@@ -4,13 +4,15 @@ import type { ExternalUpdater } from "./ExternalUpdater";
 import type { HealthItem } from "./HealthItem";
 import type { LockStatus } from "./LockStatus";
 import type { OfflineUpdateStatus } from "./OfflineUpdateStatus";
+import type { RebootReason } from "./RebootReason";
 import type { SnapshotSupport } from "./SnapshotSupport";
+import type { UpdateBlocker } from "./UpdateBlocker";
 
 /**
  * Aggregated health report (UI health center, dashboard card, MCP `health_get`).
  */
-export type HealthReport = { items: Array<HealthItem>, pacnewCount: number, pacsaveCount: number, configFiles: Array<ConfigFileHint>, lock: LockStatus, rebootRecommended: boolean, rebootReasons: Array<string>, packageCacheBytes: number | null, snapshot: SnapshotSupport, offlineUpdate: OfflineUpdateStatus, externalUpdaters: Array<ExternalUpdater>, 
+export type HealthReport = { items: Array<HealthItem>, pacnewCount: number, pacsaveCount: number, configFiles: Array<ConfigFileHint>, lock: LockStatus, rebootRecommended: boolean, rebootReasons: Array<RebootReason>, packageCacheBytes: number | null, snapshot: SnapshotSupport, offlineUpdate: OfflineUpdateStatus, externalUpdaters: Array<ExternalUpdater>, 
 /**
  * Reasons that currently block an unattended update preparation.
  */
-updateBlockers: Array<string>, collectedAt: number, };
+updateBlockers: Array<UpdateBlocker>, collectedAt: number, };

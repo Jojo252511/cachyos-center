@@ -5,7 +5,8 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use cachyos_center_core::health::{
-    ConfigFileHint, HealthItem, HealthItemKind, HealthReport, Severity, SnapshotSupport,
+    ConfigFileHint, HealthItem, HealthItemKind, HealthReport, RebootReason, Severity,
+    SnapshotSupport, UpdateBlocker,
 };
 use cachyos_center_core::history::{HistoryEntry, HistorySource, LogOutcome};
 use cachyos_center_core::mcp::{SERVER_NAME, TOOL_NAMES};
@@ -298,7 +299,7 @@ fn health() -> HealthReport {
             holder_running: Some(true),
         },
         reboot_recommended: true,
-        reboot_reasons: vec!["running kernel was replaced by an update".into()],
+        reboot_reasons: vec![RebootReason::KernelReplaced],
         package_cache_bytes: Some(1 << 30),
         snapshot: SnapshotSupport {
             btrfs_root: true,
@@ -322,7 +323,7 @@ fn health() -> HealthReport {
             active: true,
             description: "Cachy-Update/Arch-Update: update checks and notifications".into(),
         }],
-        update_blockers: vec!["package manager is busy (db.lck)".into()],
+        update_blockers: vec![UpdateBlocker::PackageManagerBusy],
         collected_at: 1_000,
     }
 }

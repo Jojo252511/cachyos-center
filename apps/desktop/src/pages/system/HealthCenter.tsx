@@ -87,9 +87,13 @@ export function HealthCenter({ report }: { report: HealthReport }) {
         {report.rebootReasons.length > 0 ? (
           <>
             <p className="card__subtitle">{t('health.reboot.reasons')}</p>
-            <ul className="plain-list mono">
+            <ul className="plain-list">
               {report.rebootReasons.map((reason) => (
-                <li key={reason}>{reason}</li>
+                <li key={reason.kind}>
+                  {reason.kind === 'kernelReplaced'
+                    ? t('health.rebootReason.kernelReplaced')
+                    : t('health.rebootReason.updatedSinceBoot', { packages: reason.packages.join(', ') })}
+                </li>
               ))}
             </ul>
           </>
@@ -146,9 +150,9 @@ export function HealthCenter({ report }: { report: HealthReport }) {
         ) : null}
         <p className="card__subtitle">{t('health.blockers')}</p>
         {report.updateBlockers.length > 0 ? (
-          <ul className="plain-list mono">
+          <ul className="plain-list">
             {report.updateBlockers.map((blocker) => (
-              <li key={blocker}>{blocker}</li>
+              <li key={blocker}>{t(`health.blocker.${blocker}`)}</li>
             ))}
           </ul>
         ) : (
