@@ -41,16 +41,16 @@ cargo deny check advisories licenses bans sources
 
 ## Ergebnisse
 
-Lauf vom 2026-10-01 auf dem Entwicklungsrechner, Commit `8b955d3`.
+Lauf vom 2026-10-01 auf dem Entwicklungsrechner, Commit `df33c67` (nach Prüfdurchlauf 1).
 
 | Befehl | Ergebnis |
 |---|---|
 | `cargo fmt --all --check` | sauber |
 | `cargo clippy --workspace --all-targets --locked -- -D warnings` | keine Warnungen |
-| `CC_REQUIRE_BRIDGE=1 CC_REQUIRE_SANDBOX=1 cargo test --workspace --locked` | **289 bestanden, 0 fehlgeschlagen**, 3 ignoriert (Netzwerk) |
+| `CC_REQUIRE_BRIDGE=1 CC_REQUIRE_SANDBOX=1 cargo test --workspace --locked` | **297 bestanden, 0 fehlgeschlagen**, 3 ignoriert (Netzwerk) |
 | `cargo test --workspace --locked -- --ignored` | 3 von 3 bestanden: `isolated_update_check`, `fetches_the_official_feeds`, `notify_only_checks_without_installing` |
 | `npm run typecheck`, `npm run lint` | sauber |
-| `npm test` | **70 bestanden** in 15 Testdateien |
+| `npm test` | **75 bestanden** in 16 Testdateien |
 | `npm run build` | erfolgreich |
 | `npm audit --audit-level=high` | 0 Schwachstellen |
 | `cargo deny check advisories licenses bans sources` | in CI bestanden (lokal nicht installiert) |
@@ -61,25 +61,26 @@ Rust-Tests je Testprogramm:
 | Crate | Testprogramm | bestanden | ignoriert |
 |---|---|---|---|
 | `alpm-bridge` | Unit-Tests | 8 | – |
-| `core` | Unit-Tests | 131 | – |
+| `core` | Unit-Tests | 132 | – |
 | `core` | `tests/packaging.rs` | 5 | – |
 | `desktop` (Tauri-Backend) | Unit-Tests | 5 | – |
 | `helper` | Unit-Tests | 13 | – |
 | `helper` | `tests/preflight.rs` | 3 | 1 (Netzwerk) |
 | `helper` | `tests/recovery.rs` | 3 | – |
-| `helper` | `tests/sandbox.rs` (echtes pacman) | 9 | – |
+| `helper` | `tests/sandbox.rs` (echtes pacman, Polkit-Codepfad) | 12 | – |
 | `mcp` | Unit-Tests | 34 | – |
 | `mcp` | `tests/host.rs` (MCP-Host) | 5 | – |
-| `packages` | Unit-Tests | 14 | – |
+| `packages` | Unit-Tests | 16 | – |
 | `packages` | `tests/system_readonly.rs` | 7 | 1 (Netzwerk) |
-| `service` | Unit-Tests | 13 | – |
+| `service` | Unit-Tests | 15 | – |
 | `service` | `tests/core_readonly.rs` | 5 | – |
 | `system` | Unit-Tests | 34 | 1 (Netzwerk) |
 
-**CI (GitHub Actions, Container `archlinux:base-devel`):** Der erste vollständige Lauf
-(Commit `999a498`) war in allen vier Jobs grün: Rust inklusive Sandbox-Tests mit echtem pacman,
-Prüfung der TypeScript-Bindings und GUI-Start unter Xvfb ohne Hyprland; Frontend; cargo-deny;
-Arch-Paketbau mit Artefakt und SHA-256.
+**CI (GitHub Actions, Container `archlinux:base-devel`):** Fünf Jobs: Rust inklusive
+Sandbox-Tests mit echtem pacman, Prüfung der TypeScript-Bindings und GUI-Start unter Xvfb ohne
+Hyprland; Frontend; Secret-Scan der gesamten Git-Historie mit gitleaks; cargo-deny; Arch-Paketbau
+mit Artefakt und SHA-256. Alle Läufe auf `main` seit dem ersten (Commit `999a498`) waren grün,
+soweit sie nicht durch einen neueren Push abgebrochen wurden; gitleaks fand keine Zugangsdaten.
 
 ## Abdeckung der kritischen Abläufe
 
@@ -93,16 +94,20 @@ Arch-Paketbau mit Artefakt und SHA-256.
 | Installation und Entfernen von Repository-Paketen (inkl. `-Rs`) | `sandbox.rs`: `install_and_remove_repository_packages` | bestanden |
 | Lokale/AUR-Pakete werden nicht entfernt | `sandbox.rs`: `local_packages_are_not_removed` | bestanden |
 | Verweigerte Autorisierung ändert nichts | `sandbox.rs`: `denied_authorization_changes_nothing` | bestanden |
+| Polkit-Codepfad: Subjekt `system-bus-name` des tatsächlichen Aufrufers, eigene Action-ID je Methode, `AllowUserInteraction` | `sandbox.rs`: `polkit_checks_the_bus_sender_for_every_action` (Test-Authority auf dem privaten Bus) | bestanden |
+| Polkit-Ablehnung, Challenge ohne Agent und Zeitüberschreitung ändern nichts; der Dialog wird zurückgezogen | `sandbox.rs`: `polkit_denial_challenge_and_timeout_change_nothing` | bestanden |
+| Abbrechen nur nach Polkit-Prüfung, offener Dialog wird zurückgezogen | `sandbox.rs`: `cancel_is_checked_by_polkit_and_withdraws_the_dialog` | bestanden |
 | Ungültige Eingaben (Optionen als Paketname, falsches Repository, falscher Digest) | `sandbox.rs`: `invalid_input_is_rejected_synchronously`; Unit-Tests in `core::validate` | bestanden |
 | Feste pacman-Argumente, nie `--overwrite`/`--nodeps`/`-dd` | `runner.rs`: `fixed_argument_vectors`, `never_dangerous_flags` | bestanden |
 | Wiederherstellung nach Helper-Absturz aus Journal und `pacman.log` | `recovery.rs` (3 Tests) | bestanden |
 | Nie „0 Updates“ ohne frische Prüfung; fehlgeschlagener Vorgang macht den Stand veraltet | `system_readonly.rs`: `never_checked_is_not_zero_updates`; `core_readonly.rs`: `failed_transaction_after_check_makes_status_stale` | bestanden |
 | Pläne ohne Lock, produktive Sync-Datenbank unverändert | `system_readonly.rs`: `plans_are_computed_without_taking_the_lock`, `isolated_update_check` | bestanden |
 | Automatikmodus gesperrt, Vorabprüfungen vor Netzwerkzugriff | `preflight.rs`, `updaters.rs`: `blockers`, `experimental_switch` | bestanden |
-| Diagnosebericht ohne Benutzer-, Hostnamen, Home-Pfade, Adressen | `core_readonly.rs`: `diagnostic_report_is_sanitized`; `core::sanitize` | bestanden |
+| Diagnosebericht ohne Benutzer-, Hostnamen, Home-Pfade, Adressen; ohne frische Prüfung „updates: unknown“ | `core_readonly.rs`: `diagnostic_report_is_sanitized`; `core::sanitize`; `diagnostic.rs`: `counts_are_only_current_after_a_fresh_check` | bestanden |
+| `checkupdates` blockiert nie an einer vollen Pipe; Zeitüberschreitung wird gemeldet | `check.rs`: `long_output_never_blocks_the_check`, `timeout_is_reported` | bestanden |
 | MCP nur lesend, standardmäßig aus, stdout nur Protokoll | `crates/mcp/tests/host.rs` | bestanden |
 | Paketierung passt zum Code (Bus-Name, Polkit-Aktionen, Units, Fensterklasse, Pfade) | `crates/core/tests/packaging.rs` | bestanden |
-| Oberfläche: Upgrade-/Installations-/Entfernen-Dialog, Planabweichung, Fortschritt, Auto-Update | `apps/desktop/src/**/*.test.tsx` | bestanden |
+| Oberfläche: Upgrade-/Installations-/Entfernen-Dialog, Planabweichung, Fortschritt, Auto-Update, Fokus-Rückgabe nach Dialogen, Hinweis auf Teilaktualisierung, zurückgehaltene Pakete | `apps/desktop/src/**/*.test.tsx` | bestanden |
 
 ## Manuelle Prüfungen auf dem Entwicklungsrechner
 
@@ -140,7 +145,7 @@ nennt den Test. Ein Ersatznachweis ersetzt den VM-Lauf nicht.
 | A10 | GUI- und Helper-Neustart während eines Vorgangs | offen | `recovery.rs` |
 | F1 | Offline | offen | auf dem Entwicklungsrechner in einem Netzwerk-Namespace ohne Verbindung geprüft (siehe „Manuelle Prüfungen“) |
 | F2 | Voller Datenträger | offen | – |
-| F3 | Kein Polkit-Agent | offen | `denied_authorization_changes_nothing` (Test-Autorisierung) |
+| F3 | Kein Polkit-Agent | offen | `polkit_denial_challenge_and_timeout_change_nothing` (Challenge ohne Agent und Zeitüberschreitung gegen eine Test-Authority) |
 | F4 | Abbruch während Download | offen | `cancel_before_commit` |
 | F5 | Kernel-Update, Neustartempfehlung | offen | Unit-Tests in `core::classify` |
 | F6 | `.pacnew` im Gesundheitszentrum | offen | Gesundheitszentrum zeigt die sechs realen `.pacnew`-Dateien des Entwicklungsrechners; Unit-Tests in `system::health` |
