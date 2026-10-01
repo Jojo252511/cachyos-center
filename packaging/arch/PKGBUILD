@@ -55,10 +55,17 @@ prepare() {
   npm ci --no-audit --no-fund
 }
 
-build() {
-  cd "$pkgname"
+_cargo_env() {
   export CARGO_HOME="$srcdir/cargo-home"
   export CARGO_TARGET_DIR=target
+  # Keep build paths (panic locations, also of dependencies in CARGO_HOME) out of
+  # the binaries, like makepkg does for debug packages.
+  export RUSTFLAGS="${RUSTFLAGS:-} --remap-path-prefix=$srcdir=/usr/src/debug/$pkgname"
+}
+
+build() {
+  cd "$pkgname"
+  _cargo_env
   # TAURI_ENV_PLATFORM marks a build for the webview, as the Tauri CLI does:
   # the browser demo data (mock) is left out of the bundle.
   (cd apps/desktop && TAURI_ENV_PLATFORM=linux npm run build)
@@ -67,8 +74,7 @@ build() {
 
 check() {
   cd "$pkgname"
-  export CARGO_HOME="$srcdir/cargo-home"
-  export CARGO_TARGET_DIR=target
+  _cargo_env
   # Unit tests only; the system and sandbox integration tests run in CI.
   cargo test --frozen --release --workspace --lib --bins
 }
