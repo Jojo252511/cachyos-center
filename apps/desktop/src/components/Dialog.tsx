@@ -1,6 +1,6 @@
 import { X } from 'lucide-react';
 import { Dialog as RadixDialog } from 'radix-ui';
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 
 import { useI18n } from '../i18n';
 
@@ -17,9 +17,35 @@ export interface AppDialogProps {
   locked?: boolean;
 }
 
-/** Modal dialog with focus trap and labelled title (Radix). */
+/** Focuses `element` when it can still take the focus, otherwise the main content. */
+function restoreFocus(element: HTMLElement | null): void {
+  const usable =
+    element !== null &&
+    element.isConnected &&
+    !(element instanceof HTMLButtonElement && element.disabled) &&
+    element !== document.body;
+  if (usable) {
+    element.focus();
+    if (document.activeElement === element) return;
+  }
+  document.getElementById('main-content')?.focus();
+}
+
+/**
+ * Modal dialog with focus trap and labelled title (Radix). The dialogs are
+ * opened from application state, not from a Radix trigger, so the element
+ * that had the focus is remembered here and gets it back on close.
+ */
 export function AppDialog({ open, onOpenChange, title, description, variant = 'default', footer, children, locked = false }: AppDialogProps) {
   const { t } = useI18n();
+  const returnFocus = useRef<HTMLElement | null>(null);
+  // Layout effects run before Radix moves the focus into the dialog.
+  useLayoutEffect(() => {
+    if (open) {
+      const active = document.activeElement;
+      returnFocus.current = active instanceof HTMLElement ? active : null;
+    }
+  }, [open]);
   const handleOpenChange = (next: boolean) => {
     if (!next && locked) return;
     onOpenChange(next);
@@ -30,6 +56,11 @@ export function AppDialog({ open, onOpenChange, title, description, variant = 'd
         <RadixDialog.Overlay className="dialog-overlay" />
         <RadixDialog.Content
           className={`dialog dialog--${variant}`}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            restoreFocus(returnFocus.current);
+            returnFocus.current = null;
+          }}
           // Without a description the default reference would point to nothing.
           {...(description ? {} : { 'aria-describedby': undefined })}
         >
