@@ -59,7 +59,9 @@ build() {
   cd "$pkgname"
   export CARGO_HOME="$srcdir/cargo-home"
   export CARGO_TARGET_DIR=target
-  (cd apps/desktop && npm run build)
+  # TAURI_ENV_PLATFORM marks a build for the webview, as the Tauri CLI does:
+  # the browser demo data (mock) is left out of the bundle.
+  (cd apps/desktop && TAURI_ENV_PLATFORM=linux npm run build)
   cargo build --frozen --release --workspace --features cachyos-center-desktop/custom-protocol
 }
 
