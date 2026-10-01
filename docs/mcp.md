@@ -109,7 +109,7 @@ durchgeführt hat. Ein altes Ergebnis wird nie als aktueller Zustand ausgegeben:
 
 `ageSeconds` ist das Alter der letzten erfolgreichen Prüfung (`null`, wenn es keine gibt).
 `updateCount` und `heldBackCount` nennen die vollständige Anzahl auch dann, wenn die Listen wegen
-der Größengrenze gekürzt wurden.
+der Größengrenze gekürzt wurden. Ohne erfolgreiche Prüfung sind beide `null` (unbekannt), nie 0.
 
 ## Ergebnisformat und Fehler
 

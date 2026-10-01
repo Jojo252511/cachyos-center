@@ -59,6 +59,12 @@ freischalten:
 echo 'offline_auto_update = true' | sudo tee /etc/cachyos-center/experimental.toml
 ```
 
+Offen vor der Freigabe: Die konkreten Blockadegründe eines Preflight-Laufs (z. B. ungelesene News,
+Akku, fehlender Speicher) erscheinen in der Oberfläche bisher nur als englisches technisches Detail
+unter dem lokalisierten Ergebnis; sie bekommen vor der Freigabe stabile Kennungen mit deutschen
+Texten. Das Warten auf einen fremden Paketmanager ist automatisiert getestet, im echten
+Timer-Lauf aber nur auf der VM prüfbar (Szenario A6b).
+
 ## Paketkonsistenz mit `offline.conf`
 
 Die von CachyOS dokumentierte optionale `offline.conf` hält Kernelpakete per `IgnorePkg` für

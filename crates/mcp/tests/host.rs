@@ -219,6 +219,7 @@ async fn host_sees_exactly_the_read_only_tools_and_real_data() {
     assert!(!updates["note"].as_str().expect("note").is_empty());
     assert_eq!(updates["checkedAt"], Value::Null);
     assert_eq!(updates["updates"], json!([]));
+    assert_eq!(updates["updateCount"], Value::Null);
 
     // Package tools (read-only, local databases).
     let result = call(

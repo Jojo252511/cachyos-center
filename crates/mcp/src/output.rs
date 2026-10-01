@@ -256,12 +256,13 @@ pub struct UpdatesListOutput {
     pub stale: bool,
     /// Explanation when the data is not fresh.
     pub note: Option<String>,
-    /// Number of available updates (before any truncation).
-    pub update_count: u32,
+    /// Number of available updates (before any truncation); `null` without
+    /// any successful check, so that "unknown" is never reported as 0.
+    pub update_count: Option<u32>,
     /// Updates a full system upgrade would install.
     pub updates: Vec<UpdateItem>,
-    /// Number of held-back updates (before any truncation).
-    pub held_back_count: u32,
+    /// Number of held-back updates (before any truncation); `null` without any successful check.
+    pub held_back_count: Option<u32>,
     /// Newer versions held back by `IgnorePkg`/`IgnoreGroup` (e.g. offline.conf).
     pub held_back: Vec<UpdateItem>,
     /// Total download size in bytes, if known.
@@ -279,6 +280,13 @@ impl UpdatesListOutput {
     pub fn new(result: UpdateCheckResult, now: Timestamp) -> Self {
         let age_seconds = result.checked_at.map(|t| now.saturating_sub(t).max(0));
         let note = staleness_note(&result, age_seconds);
+        // Counts exist only for data from a successful check (possibly outdated).
+        let known = result.checked_at.is_some()
+            && matches!(
+                result.status,
+                CheckStatus::Fresh | CheckStatus::Stale | CheckStatus::Failed
+            );
+        let known_count = |n: usize| known.then(|| count(n));
         Self {
             status: wire(&result.status),
             checked_at: result.checked_at,
@@ -286,9 +294,9 @@ impl UpdatesListOutput {
             age_seconds,
             stale: result.status != CheckStatus::Fresh,
             note,
-            update_count: count(result.updates.len()),
+            update_count: known_count(result.updates.len()),
             updates: result.updates.into_iter().map(UpdateItem::from).collect(),
-            held_back_count: count(result.held_back.len()),
+            held_back_count: known_count(result.held_back.len()),
             held_back: result.held_back.into_iter().map(UpdateItem::from).collect(),
             total_download_size: result.total_download_size,
             reboot_recommended: result.reboot_recommended,

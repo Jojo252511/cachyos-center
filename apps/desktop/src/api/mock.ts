@@ -348,6 +348,14 @@ function failedCommitAfterCheck(state: MockState): boolean {
   );
 }
 
+/** Like the backend: never checked or overdue means "now", never a time in the past. */
+function nextCheckAt(state: MockState): number | null {
+  const hours = state.settings.checkIntervalHours;
+  if (hours <= 0) return null;
+  const last = state.check.attemptedAt ?? state.check.checkedAt;
+  return last === null ? nowSec() : Math.max(last + hours * HOUR, nowSec());
+}
+
 function checkStatus(state: MockState): CheckStatus {
   const { status, checkedAt } = state.check;
   if (status === 'fresh' && checkedAt !== null && nowSec() - checkedAt > STALE_AFTER) return 'stale';
@@ -530,7 +538,7 @@ function dashboard(state: MockState): Dashboard {
     healthWorst: worst,
     lastActivity: state.activity[0] ?? null,
     lastFullUpgrade: state.lastFullUpgrade,
-    nextCheckAt: state.settings.checkIntervalHours > 0 ? nowSec() + Math.min(state.settings.checkIntervalHours * HOUR, 2 * HOUR + 1260) : null,
+    nextCheckAt: nextCheckAt(state),
     offlineUpdatePrepared: state.autoUpdate.offline.prepared,
     rebootRecommended: state.rebootReasons.length > 0,
     collectedAt: nowSec(),

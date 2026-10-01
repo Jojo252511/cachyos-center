@@ -57,6 +57,17 @@ target/debug/cachyos-center-helper daemon --dev-root /tmp/cc-dev \
 ```
 
 Eine Debug-Build der Oberfläche nutzt ihn mit `CACHYOS_CENTER_HELPER_BUS=session`.
+
+Weitere Schalter des Entwicklungsmodus (nur zusammen mit `--dev-root`, nie als root):
+
+| Schalter | Wirkung |
+|---|---|
+| `--pacman PATH` | anderes pacman-Programm (z. B. Testattrappe) |
+| `--deny ACTION` | Test-Autorisierung: diese Polkit-Aktion ablehnen, alle anderen erlauben |
+| `--polkit` | statt der Test-Autorisierung die Polkit-Authority auf dem Entwicklungsbus fragen (die Sandbox-Tests registrieren dort eine Test-Authority) |
+| `--auth-timeout-secs N` | Zeitlimit einer Polkit-Prüfung |
+| `--lock-wait-secs N` | maximale Wartezeit auf einen fremden pacman-Lock |
+| `--idle-secs N` | Beenden nach N Sekunden ohne Vorgang |
 Die Sandbox-Einrichtung zeigt `crates/helper/tests/sandbox.rs`.
 
 ## TypeScript-Typen

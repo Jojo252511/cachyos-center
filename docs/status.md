@@ -12,7 +12,7 @@ der Implementierungsauftrag des Projekts; Nachweise stehen im [Testprotokoll](te
 | M2 – manuelle Aktionen | Installieren, Entfernen, vollständiges Update mit Helper und Verlauf | echte Testtransaktionen, Lock-/Signatur-/Abbruchfälle bestanden | **erfüllt in der Sandbox:** echte pacman-Transaktionen inklusive Lock, Signaturfehler, Abbruch, Planabweichung und Wiederherstellung; als Systemdienst mit Polkit-Dialog nur auf einer VM prüfbar | `crates/helper/tests/sandbox.rs` (12 Tests), `recovery.rs`, CI |
 | M3 – Auto-Update | Policy, systemd-Preflight, `pacman-offline`-Integration, Stop-Regeln, Benachrichtigungen | Vorbereitung ohne GUI; Installation beim nächsten manuellen Neustart; Blockaden erkannt | **teilweise:** „Nur benachrichtigen“ fertig; Automatikmodus implementiert, aber gesperrt und als „in Entwicklung“ gekennzeichnet, bis der `pacman-offline`-Pfad auf einer VM verifiziert ist | `preflight.rs`, [Automatische Updates](automatische-updates.md) |
 | M4 – MCP | read-only stdio-Server und Host-Beispiel | Tools liefern Daten, keine Schreiboperation erreichbar | **erfüllt** | `crates/mcp/tests/host.rs`, [MCP](mcp.md) |
-| M5 – Release | Paketierung, Doku, i18n, Barrierefreiheit, CI, Testmatrix | Installation/Deinstallation, Upgrade und Start auf frischem CachyOS geprüft | **offen:** Paketbau, Doku, Deutsch/Englisch, Tastatur- und Screenreader-Bedienung und CI fertig; die VM-Testmatrix (frische Installation, Upgrade, Deinstallation) fehlt | Testprotokoll „VM-Testmatrix“ |
+| M5 – Release | Paketierung, Doku, i18n, Barrierefreiheit, CI, Testmatrix | Installation/Deinstallation, Upgrade und Start auf frischem CachyOS geprüft | **offen:** Paketbau, Doku, Deutsch/Englisch, Tastatur- und Screenreader-Bedienung (Fokusführung bei Dialogen, Detailbereichen und Vorgangsergebnissen getestet) und CI fertig; die VM-Testmatrix (frische Installation, Upgrade, Deinstallation) fehlt | Testprotokoll „VM-Testmatrix“, UI-Tests |
 
 ## Bewusste Abweichungen vom Konzept
 
@@ -45,7 +45,10 @@ der Implementierungsauftrag des Projekts; Nachweise stehen im [Testprotokoll](te
 2. Die Szenarien A1–A10 und F1–F7 aus [tests/vm/README.md](../tests/vm/README.md) durchspielen und
    im Testprotokoll mit Datum, Paketversion, pacman-Version und Kernel eintragen.
 3. Den `pacman-offline`-Pfad prüfen (Kernel-Update, Signaturfehler, abgebrochener Neustart,
-   Kombination mit `offline.conf`); erst danach den Automatikmodus freigeben.
+   Kombination mit `offline.conf`); erst danach den Automatikmodus freigeben. Vor der Freigabe
+   bekommen die Blockadegründe des Preflights stabile Kennungen mit deutschen Texten (heute
+   erscheinen sie im gesperrten Modus nur als englisches technisches Detail) und die Wartezeit auf
+   einen fremden Paketmanager wird auf der VM geprüft (A6b).
 4. Bei bestandener Matrix `v0.1.0` taggen, ein Release mit SHA-256 anlegen und die Signatur der
    Artefakte einrichten.
 5. Namens- und Markenprüfung zu „CachyOS“ vor einer breiteren Veröffentlichung.

@@ -328,3 +328,22 @@ async fn prepare(run: &mut Run<'_>, policy: &AutoUpdateConfig, packages: Package
     }
     0
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn waits_for_a_foreign_lock_and_never_removes_it() {
+        let dir = tempfile::tempdir().unwrap();
+        let lock = dir.path().join("db.lck");
+        std::fs::write(&lock, "").unwrap();
+        let started = Instant::now();
+        assert!(!wait_for_package_manager(&lock, Duration::from_millis(300)).await);
+        assert!(lock.exists(), "the lock is never removed");
+        assert!(started.elapsed() < Duration::from_secs(10));
+
+        std::fs::remove_file(&lock).unwrap();
+        assert!(wait_for_package_manager(&lock, Duration::from_millis(300)).await);
+    }
+}

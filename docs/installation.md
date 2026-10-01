@@ -48,6 +48,8 @@ systemctl --user enable --now cachyos-center-notify.path
 - Paketänderungen fordern eine Authentifizierung über den Polkit-Agenten der Sitzung an. Unter
   Hyprland muss ein Agent laufen (z. B. `hyprpolkitagent` oder der Agent der Desktop-Shell).
 
+## Deinstallation
+
 Zuerst die Benachrichtigungs-Unit des Benutzers deaktivieren (danach fehlt ihre Unit-Datei),
 dann das Paket entfernen:
 

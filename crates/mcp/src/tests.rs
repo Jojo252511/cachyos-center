@@ -892,6 +892,9 @@ async fn updates_list_never_presents_old_data_as_current() {
     assert_eq!(never["checkedAt"], Value::Null);
     assert_eq!(never["ageSeconds"], Value::Null);
     assert_eq!(never["updates"], json!([]));
+    // Unknown is never reported as 0 updates.
+    assert_eq!(never["updateCount"], Value::Null);
+    assert_eq!(never["heldBackCount"], Value::Null);
     assert!(
         never["note"]
             .as_str()
