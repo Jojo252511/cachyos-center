@@ -284,6 +284,19 @@ describe('focus after closing non-modal parts', () => {
 });
 
 describe('focus when a re-render removes or disables the focused control', () => {
+  it('gives the focus to the page title when the app starts after „Erneut prüfen“', async () => {
+    const user = userEvent.setup();
+    mockBackend();
+    vi.spyOn(api, 'getAppInfo').mockRejectedValueOnce({ code: 'UNAVAILABLE', message: 'backend not ready', detail: null });
+    render(<App />);
+    // Before the settings are loaded the language follows the browser (English in jsdom).
+    const retry = within(await screen.findByRole('alert')).getByRole('button');
+    retry.focus();
+    await user.keyboard('{Enter}');
+    const title = await screen.findByRole('heading', { level: 1, name: 'Übersicht' });
+    await waitFor(() => expect(title).toHaveFocus());
+  });
+
   it('hands the focus to the header check button when the first check replaces the empty state', async () => {
     const user = userEvent.setup();
     mockBackend('neverChecked');

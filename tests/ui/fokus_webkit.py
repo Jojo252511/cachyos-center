@@ -38,7 +38,8 @@ LOGGER = r"""(() => {
 })()"""
 
 # Steps: ("until", expr, timeout) waits, ("do", expr) acts, ("key", names) presses real keys,
-# ("wait", seconds), ("expect", expr, description) checks.
+# ("wait", seconds), ("expect", expr, description) checks, ("expect_within", expr, timeout,
+# description) checks that expr becomes true within the timeout.
 SCENARIOS = [
     {
         "name": "Updates: erste Prüfung aus dem Leerzustand",
@@ -115,6 +116,8 @@ SCENARIOS = [
             ("until", "[...document.querySelectorAll('[role=dialog] button')].some((b) => b.textContent.includes('Upgrade starten') && !b.disabled)", 10),
             ("do", "[...document.querySelectorAll('[role=dialog] button')].find((b) => b.textContent.includes('Upgrade starten')).focus() ?? true"),
             ("key", ["Return"]),
+            ("expect_within", "document.activeElement.closest('[role=dialog]') && document.activeElement.getAttribute('aria-busy') === 'true' && !document.activeElement.disabled", 2,
+             "während des Starts: Fokus auf dem Start-Button (busy, nicht deaktiviert)"),
             ("until", "!document.querySelector('[role=dialog]') && document.querySelector('#operation-panel .operation-panel__cancel button')", 15),
             ("wait", 0.3),
             ("expect", "__button('Installieren').disabled && document.activeElement.id === 'updates-check'",
@@ -317,6 +320,14 @@ def run_scenarios(base: str, evaluate, pump, load, press) -> int:
                 ok = evaluate(step[1]) is True
                 failures += 0 if ok else 1
                 print(f"  {'ok     ' if ok else 'FEHLER '} {step[2]}", flush=True)
+            elif kind == "expect_within":
+                deadline = time.monotonic() + step[2]
+                ok = evaluate(step[1]) is True
+                while not ok and time.monotonic() < deadline:
+                    pump(0.02)
+                    ok = evaluate(step[1]) is True
+                failures += 0 if ok else 1
+                print(f"  {'ok     ' if ok else 'FEHLER '} {step[3]}", flush=True)
         report = evaluate("({active: __a(), focus: __f})", boolean=False)
         if isinstance(report, dict):
             print(f"  Fokusprotokoll: {' | '.join(report['focus'])}")

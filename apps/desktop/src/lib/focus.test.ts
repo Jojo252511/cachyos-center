@@ -135,6 +135,25 @@ describe('watchFocusLoss', () => {
     expect(events.filter((event) => event.startsWith('focusin'))).toEqual(['focusin:read', 'focusin:news-status']);
   });
 
+  it('uses its own fallback before the page title and does nothing once its root is gone', async () => {
+    stop();
+    document.body.innerHTML =
+      '<h1 id="page-title" tabindex="-1">Updates</h1><div id="dialog" role="dialog" tabindex="-1"><button id="start">Upgrade starten</button><button id="other">Abbrechen</button></div>';
+    const dialog = byId('dialog');
+    stop = watchFocusLoss(dialog, dialog);
+    const start = byId('start') as HTMLButtonElement;
+    start.focus();
+    start.disabled = true;
+    browserBlur(start);
+    await settle();
+    expect(dialog).toHaveFocus();
+    // The dialog closes with the focus inside: restoring it is up to the dialog.
+    byId('other').focus();
+    dialog.remove();
+    await settle();
+    expect(document.activeElement).toBe(document.body);
+  });
+
   it('ignores elements outside its root, such as dialogs', async () => {
     mount('');
     byId('in-dialog').focus();

@@ -1,9 +1,9 @@
 import { X } from 'lucide-react';
 import { Dialog as RadixDialog } from 'radix-ui';
-import { useLayoutEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 
 import { useI18n } from '../i18n';
-import { focusWithSuccessor, successorsOf, type Successors } from '../lib/focus';
+import { focusWithSuccessor, successorsOf, watchFocusLoss, type Successors } from '../lib/focus';
 
 export interface AppDialogProps {
   open: boolean;
@@ -27,6 +27,8 @@ export function AppDialog({ open, onOpenChange, title, description, variant = 'd
   const { t } = useI18n();
   const returnFocus = useRef<HTMLElement | null>(null);
   const returnSuccessors = useRef<Successors>(successorsOf(null));
+  // State, not a ref: the portal mounts the content only after the first render.
+  const [content, setContent] = useState<HTMLDivElement | null>(null);
   // Layout effects run before Radix moves the focus into the dialog.
   useLayoutEffect(() => {
     if (open) {
@@ -35,6 +37,9 @@ export function AppDialog({ open, onOpenChange, title, description, variant = 'd
       returnSuccessors.current = successorsOf(returnFocus.current);
     }
   }, [open]);
+  // A control in the dialog that is disabled while it has the focus hands it to the dialog
+  // (removed controls are handled by the focus trap of Radix).
+  useEffect(() => (open && content ? watchFocusLoss(content, content) : undefined), [open, content]);
   const handleOpenChange = (next: boolean) => {
     if (!next && locked) return;
     onOpenChange(next);
@@ -44,6 +49,7 @@ export function AppDialog({ open, onOpenChange, title, description, variant = 'd
       <RadixDialog.Portal>
         <RadixDialog.Overlay className="dialog-overlay" />
         <RadixDialog.Content
+          ref={setContent}
           className={`dialog dialog--${variant}`}
           onCloseAutoFocus={(event) => {
             event.preventDefault();

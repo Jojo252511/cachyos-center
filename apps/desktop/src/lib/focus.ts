@@ -55,10 +55,13 @@ export function successorsOf(element: Element | null): Successors {
   };
 }
 
-/** Focuses `element`, or its declared successor when it is gone or disabled. */
-export function focusWithSuccessor(element: HTMLElement | null, successors: Successors = successorsOf(element)): void {
+/**
+ * Focuses `element`, or its declared successor when it is gone or disabled;
+ * `last` is tried before the page title.
+ */
+export function focusWithSuccessor(element: HTMLElement | null, successors: Successors = successorsOf(element), last: HTMLElement | null = null): void {
   const fallback = successors.fallback?.getAttribute(FOCUS_FALLBACK);
-  focusFirst(element, fallback ? document.getElementById(fallback) : null, firstFocusable(successors.group));
+  focusFirst(element, fallback ? document.getElementById(fallback) : null, firstFocusable(successors.group), last);
 }
 
 /**
@@ -86,10 +89,12 @@ export function activeElement(): HTMLElement | null {
  * disabled element it fires a late blur, handled through `focusout`.
  *
  * The check runs after a zero timeout, so focus moves that an event handler
- * scheduled with `focusSoon` come first. Dialogs render outside `root` and
- * restore the focus themselves. Returns the function that stops watching.
+ * scheduled with `focusSoon` come first. Without a declared successor
+ * `fallback` takes the focus, then the page title; a dialog watches its own
+ * content and passes itself. Once `root` has left the document (a dialog
+ * closed) nothing is moved. Returns the function that stops watching.
  */
-export function watchFocusLoss(root: HTMLElement): () => void {
+export function watchFocusLoss(root: HTMLElement, fallback: HTMLElement | null = null): () => void {
   let focused: HTMLElement | null = null;
   let successors = successorsOf(null);
   let timer: number | undefined;
@@ -100,10 +105,10 @@ export function watchFocusLoss(root: HTMLElement): () => void {
     timer = undefined;
     const element = focused;
     const active = document.activeElement;
-    if (!element || (active instanceof HTMLElement && active !== document.body && active.isConnected)) return;
+    if (!element || !root.isConnected || (active instanceof HTMLElement && active !== document.body && active.isConnected)) return;
     focused = null;
     // Still there and usable: the focus was left on purpose, e.g. by a click on an empty area.
-    if (lost(element)) focusWithSuccessor(element, successors);
+    if (lost(element)) focusWithSuccessor(element, successors, fallback);
   };
   const schedule = () => {
     if (timer === undefined) timer = window.setTimeout(check, 0);

@@ -40,13 +40,27 @@ describe('Button', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  it('is really disabled when disabled, also while busy', () => {
-    render(
-      <Button busy disabled>
-        Installieren
+  it('stays focusable while busy even when also disabled, and is disabled again afterwards', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    const { rerender } = render(
+      <Button busy disabled onClick={onClick}>
+        Upgrade starten
       </Button>,
     );
-    const button = screen.getByRole('button', { name: 'Installieren' });
+    const button = screen.getByRole('button', { name: 'Upgrade starten' });
+    // E.g. the start is blocked as soon as the operation runs, while the start request is still pending.
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    button.focus();
+    await user.keyboard('{Enter}');
+    expect(onClick).not.toHaveBeenCalled();
+    expect(button).toHaveFocus();
+    rerender(
+      <Button disabled onClick={onClick}>
+        Upgrade starten
+      </Button>,
+    );
     expect(button).toBeDisabled();
     expect(button).not.toHaveAttribute('aria-disabled');
   });

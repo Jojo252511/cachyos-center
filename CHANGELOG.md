@@ -20,8 +20,8 @@ Alle nennenswerten Änderungen dieses Projekts. Format angelehnt an
   Secret-Scan der gesamten Git-Historie (gitleaks).
 - Statusseite mit Meilensteinen, Abweichungen und nächsten Schritten (`docs/status.md`).
 - Tastaturfokus bleibt erhalten, wenn ein Zustandswechsel das fokussierte Bedienelement entfernt
-  oder deaktiviert (z. B. die erste Updateprüfung, „Erneut prüfen“, „Übernehmen“); Prüfskript
-  `tests/ui/fokus_webkit.py` mit echten Tastendrücken in WebKitGTK.
+  oder deaktiviert (z. B. die erste Updateprüfung, „Erneut prüfen“, „Übernehmen“, der Start eines
+  Upgrades im Dialog); Prüfskript `tests/ui/fokus_webkit.py` mit echten Tastendrücken in WebKitGTK.
 
 ### Sicherheit
 - Jede schreibende Helper-Methode prüft den Bus-Absender per Polkit, auch das Abbrechen (eigene

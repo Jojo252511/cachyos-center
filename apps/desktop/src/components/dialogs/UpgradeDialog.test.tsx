@@ -1,14 +1,18 @@
-import { screen, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { buildUpgradePlan, UPDATE_DEFS } from '../../api/mockData';
+import { I18nProvider } from '../../i18n';
 import { createFormatters } from '../../i18n/format';
 import type { NewsGate } from '../../lib/news';
 import { renderI18n } from '../../test/utils';
 import { UpgradeDialog } from './UpgradeDialog';
 
 const plan = buildUpgradePlan(UPDATE_DEFS, 1_790_000_000);
+
+const German = ({ children }: { children: ReactNode }) => <I18nProvider lang="de">{children}</I18nProvider>;
 
 function renderDialog(news: NewsGate, onConfirm = vi.fn().mockResolvedValue(undefined)) {
   renderI18n(<UpgradeDialog open onOpenChange={() => undefined} plan={plan} heldBack={[]} news={news} snapshot={null} onConfirm={onConfirm} />);
@@ -58,6 +62,27 @@ describe('UpgradeDialog', () => {
   it('keeps the confirm button disabled while news are being checked', () => {
     renderDialog({ state: 'loading', unreadCount: 0, incomplete: true });
     expect(screen.getByRole('button', { name: 'Upgrade starten' })).toBeDisabled();
+  });
+
+  it('keeps the focus on „Upgrade starten“ while the start runs and after it fails', async () => {
+    const user = userEvent.setup();
+    let reject: (reason: unknown) => void = () => undefined;
+    const onConfirm = vi.fn(() => new Promise<void>((_, fail) => (reject = fail)));
+    const props = { open: true, onOpenChange: () => undefined, plan, heldBack: [], news: { state: 'clear', unreadCount: 0, incomplete: false } as NewsGate, snapshot: null, onConfirm };
+    const { rerender } = render(<UpgradeDialog {...props} />, { wrapper: German });
+    const start = screen.getByRole('button', { name: 'Upgrade starten' });
+    start.focus();
+    await user.keyboard('{Enter}');
+    // The start includes the Polkit dialog: busy, never `disabled`, even when the guard blocks meanwhile.
+    rerender(<UpgradeDialog {...props} blockedReason="Ein Paketvorgang läuft bereits." />);
+    expect(start).toHaveAttribute('aria-busy', 'true');
+    expect(start).not.toBeDisabled();
+    expect(start).toHaveFocus();
+    rerender(<UpgradeDialog {...props} />);
+    reject({ code: 'NOT_AUTHORIZED', message: 'authorization denied', detail: null });
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(start).not.toHaveAttribute('aria-busy');
+    expect(start).toHaveFocus();
   });
 
   it('shows why the upgrade cannot start', () => {

@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
@@ -59,6 +59,33 @@ describe('AppDialog', () => {
     await user.click(await screen.findByRole('button', { name: 'Schließen' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getByRole('main')).toHaveFocus();
+  });
+
+  it('keeps the focus in the dialog when a focused control is disabled', async () => {
+    const user = userEvent.setup();
+    function Disabling() {
+      const [locked, setLocked] = useState(false);
+      return (
+        <AppDialog open onOpenChange={() => undefined} title="Installieren bestätigen">
+          <button type="button" disabled={locked} onClick={() => setLocked(true)}>
+            Sperren
+          </button>
+        </AppDialog>
+      );
+    }
+    renderI18n(<Disabling />);
+    const dialog = await screen.findByRole('dialog', { name: 'Installieren bestätigen' });
+    const button = screen.getByRole('button', { name: 'Sperren' });
+    button.focus();
+    await user.keyboard('{Enter}');
+    expect(button).toBeDisabled();
+    // jsdom keeps the focus on a disabled control; WebKitGTK and Chromium blur it shortly after.
+    act(() => {
+      button.removeAttribute('disabled');
+      button.blur();
+      button.setAttribute('disabled', '');
+    });
+    await waitFor(() => expect(dialog).toHaveFocus());
   });
 
   it('gives the focus to the declared successor of a disabled opener', async () => {

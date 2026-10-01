@@ -14,6 +14,15 @@ der Implementierungsauftrag des Projekts; Nachweise stehen im [Testprotokoll](te
 | M4 – MCP | read-only stdio-Server und Host-Beispiel | Tools liefern Daten, keine Schreiboperation erreichbar | **erfüllt** | `crates/mcp/tests/host.rs`, [MCP](mcp.md) |
 | M5 – Release | Paketierung, Doku, i18n, Barrierefreiheit, CI, Testmatrix | Installation/Deinstallation, Upgrade und Start auf frischem CachyOS geprüft | **offen:** Paketbau, Doku, Deutsch/Englisch, Tastatur- und Screenreader-Bedienung (Fokusführung bei Dialogen, Detailbereichen, Vorgangsergebnissen und bei Bedienelementen, die durch einen Zustandswechsel verschwinden oder deaktiviert werden; getestet in jsdom und mit echten Tastendrücken in WebKitGTK 2.52 und Chromium) und CI fertig; die VM-Testmatrix (frische Installation, Upgrade, Deinstallation) fehlt | Testprotokoll „VM-Testmatrix“, UI-Tests |
 
+## Unabhängige Prüfung
+
+Ein separater Prüfagent hat den Stand in fünf Durchläufen gegen Konzept und Auftrag geprüft (Tests,
+Paketbau, CI, Doku, Bedienung mit echten Tastendrücken). Keiner der Durchläufe fand einen Blocker
+oder einen Mangel der Stufe Hoch; die gefundenen Mängel wurden jeweils behoben. Durchlauf 5 endete
+mit „nicht perfekt“ wegen eines Mangels der Stufe Niedrig (Tastaturfokus beim Start in den
+Transaktionsdialogen). Er ist danach behoben und durch UI-Tests, `tests/ui/fokus_webkit.py` und CI
+belegt, aber nicht mehr durch einen weiteren Prüfdurchlauf bestätigt.
+
 ## Bewusste Abweichungen vom Konzept
 
 | Punkt | Entscheidung | Begründung |

@@ -8,6 +8,7 @@ import type { Settings } from '../bindings/Settings';
 import type { ThemePreference } from '../bindings/ThemePreference';
 import { I18nProvider, initialLanguage, resolveLanguage, type Language } from '../i18n';
 import { BootScreen, StartupError } from '../components/BootScreen';
+import { activeElement, focusSoon } from '../lib/focus';
 
 export type ResolvedTheme = 'dark' | 'light';
 
@@ -111,6 +112,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     root.dataset.density = density;
     root.lang = language;
   }, [theme, density, language]);
+
+  // „Erneut prüfen“ on the startup error disappears with the loading screen: once the app is
+  // there, the page title takes the focus.
+  const ready = boot !== null && settings !== null;
+  useEffect(() => {
+    if (ready && attempt > 0 && activeElement() === null) focusSoon();
+  }, [ready, attempt]);
 
   const value = useMemo<AppStateValue | null>(
     () =>

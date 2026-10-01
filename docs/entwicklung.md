@@ -76,7 +76,8 @@ Die Sandbox-Einrichtung zeigt `crates/helper/tests/sandbox.rs`.
 ## Tastaturfokus
 
 Verschwindet ein fokussiertes Bedienelement durch einen Zustandswechsel oder wird es deaktiviert,
-setzt `watchFocusLoss` (`apps/desktop/src/lib/focus.ts`, aktiv in der App-Shell) den Fokus neu.
+setzt `watchFocusLoss` (`apps/desktop/src/lib/focus.ts`, aktiv in der App-Shell und in jedem Dialog)
+den Fokus neu.
 WebKitGTK meldet das Entfernen ohne `blur`-Ereignis; deshalb beobachtet ein `MutationObserver`
 den DOM. Das neue Ziel wird im Markup festgelegt:
 
@@ -85,9 +86,13 @@ den DOM. Das neue Ziel wird im Markup festgelegt:
 | `data-focus-fallback="id"` | das Element mit dieser ID erhält den Fokus (z. B. Fehlerpanel → Prüfen-Button der Kopfzeile) |
 | `data-focus-group` | das erste noch fokussierbare Element der Gruppe erhält ihn (Kopfzeilen-Aktionen, Seitenblättern, Paketzeile) |
 
-Ohne Angabe erhält die Seitenüberschrift den Fokus. Die Ziele werden ermittelt, sobald ein Element
+Ohne Angabe erhält die Seitenüberschrift den Fokus, in einem Dialog der Dialog selbst (entfernte
+Elemente behandelt dort der Fokusfang von Radix). Die Ziele werden ermittelt, sobald ein Element
 den Fokus erhält; ein Attribut an einem Vorfahren gilt deshalb auch dann, wenn nur ein Teil
-darunter verschwindet. Dialoge geben den Fokus nach dem Schließen nach denselben Regeln zurück. Neue Bedienelemente, die bei einem Zustandswechsel verschwinden,
+darunter verschwindet. Dialoge geben den Fokus nach dem Schließen nach denselben Regeln zurück.
+Ein Button im Zustand `busy` bleibt fokussierbar, auch wenn er zugleich `disabled` ist: Der Start
+eines Vorgangs behält so den Fokus, einschließlich der Polkit-Abfrage. Nach „Erneut prüfen“ auf dem
+Startfehler-Bildschirm erhält die Seitenüberschrift den Fokus, sobald die App geladen ist. Neue Bedienelemente, die bei einem Zustandswechsel verschwinden,
 bekommen ein passendes Ziel und einen Test.
 
 ## TypeScript-Typen
