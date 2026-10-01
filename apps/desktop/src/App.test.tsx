@@ -213,8 +213,57 @@ describe('focus after closing non-modal parts', () => {
   it('keeps the focus in the news row after marking the news as read', async () => {
     const user = userEvent.setup();
     mockBackend('newsUnread');
+    // Hold the answer back to reproduce the real order: busy first, state change later.
+    let release: () => void = () => undefined;
+    const original = api.acknowledgeNews.bind(api);
+    vi.spyOn(api, 'acknowledgeNews').mockImplementation(
+      (until) =>
+        new Promise((resolve, reject) => {
+          release = () => void original(until).then(resolve, reject);
+        }),
+    );
     renderApp(<UpdatesPage />);
-    await user.click(await screen.findByRole('button', { name: 'Als gelesen markieren' }));
-    await waitFor(() => expect(screen.getByText(/Keine ungelesenen Meldungen/)).toHaveFocus());
+    const button = await screen.findByRole('button', { name: 'Als gelesen markieren' });
+    const status = screen.getByText(/ungelesene Meldung/);
+    button.focus();
+    await user.keyboard('{Enter}');
+    // While the request runs the busy button stays focusable: aria-disabled, never
+    // `disabled` (browsers move the focus of a disabled element to <body>).
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveFocus();
+    release();
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Als gelesen markieren' })).toBeNull());
+    // The same status element (not a replaced one) now says that nothing is unread and has the focus.
+    await waitFor(() => expect(status).toHaveTextContent(/Keine ungelesenen Meldungen/));
+    await waitFor(() => expect(status).toHaveFocus());
+    expect(status.isConnected).toBe(true);
+  });
+
+  it('keeps the focus on a busy button while its action runs', async () => {
+    const user = userEvent.setup();
+    mockBackend();
+    let release: () => void = () => undefined;
+    const original = api.checkUpdates.bind(api);
+    vi.spyOn(api, 'checkUpdates').mockImplementation(
+      () =>
+        new Promise((resolve, reject) => {
+          release = () => void original().then(resolve, reject);
+        }),
+    );
+    renderApp(<UpdatesPage />);
+    const check = await screen.findByRole('button', { name: 'Jetzt prüfen' });
+    check.focus();
+    await user.keyboard('{Enter}');
+    const busy = await screen.findByRole('button', { name: 'Prüfung läuft …' });
+    expect(busy).toHaveAttribute('aria-disabled', 'true');
+    expect(busy).not.toBeDisabled();
+    expect(busy).toHaveFocus();
+    // Activating it again while busy does nothing.
+    await user.keyboard('{Enter}');
+    expect(api.checkUpdates).toHaveBeenCalledTimes(1);
+    release();
+    const done = await screen.findByRole('button', { name: 'Jetzt prüfen' });
+    expect(done).toHaveFocus();
   });
 });

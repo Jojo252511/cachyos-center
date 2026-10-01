@@ -144,24 +144,20 @@ export function PreUpgradeChecks({ updates, plan, dashboard, health, news, gate 
           {t('precheck.signatures.pending')}
         </CheckRow>
         <CheckRow label={t('precheck.news')} state={newsState}>
-          {gate.state === 'loading' ? (
-            <p id={newsStatusId} tabIndex={-1}>
-              {t('precheck.news.loading')}
-            </p>
-          ) : null}
-          {gate.state === 'clear' && newsData?.fetchedAt ? (
-            <p id={newsStatusId} tabIndex={-1}>
-              {t('precheck.news.none', { time: fmt.relative(newsData.fetchedAt, now) })}
-            </p>
-          ) : null}
-          {gate.state === 'unread' ? (
-            <p id={newsStatusId} tabIndex={-1}>
-              {t('precheck.news.unread', { count: gate.unreadCount })}
-            </p>
-          ) : null}
-          {gate.state === 'unavailable' || (gate.state === 'unread' && gate.incomplete) ? (
-            <p>{newsData?.disabled ? t('precheck.news.disabled') : t('precheck.news.unavailable')}</p>
-          ) : null}
+          {/* One persistent status line: it keeps the focus after „Als gelesen markieren“
+              removes the button, whatever the state changes to. */}
+          <p id={newsStatusId} tabIndex={-1}>
+            {gate.state === 'loading'
+              ? t('precheck.news.loading')
+              : gate.state === 'unread'
+                ? t('precheck.news.unread', { count: gate.unreadCount })
+                : gate.state === 'clear' && newsData?.fetchedAt
+                  ? t('precheck.news.none', { time: fmt.relative(newsData.fetchedAt, now) })
+                  : newsData?.disabled
+                    ? t('precheck.news.disabled')
+                    : t('precheck.news.unavailable')}
+          </p>
+          {gate.state === 'unread' && gate.incomplete ? <p>{newsData?.disabled ? t('precheck.news.disabled') : t('precheck.news.unavailable')}</p> : null}
           {newsData && newsData.errors.length > 0 ? (
             <ul className="plain-list muted">
               {newsData.errors.map((error) => (

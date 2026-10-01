@@ -18,12 +18,13 @@
   transition: background-color var(--transition), border-color var(--transition), color var(--transition);
 }
 
-.btn:hover:not(:disabled) {
+.btn:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--color-surface-3);
   color: var(--color-text);
 }
 
-.btn:disabled {
+.btn:disabled,
+.btn[aria-disabled='true'] {
   opacity: 0.55;
 }
 
@@ -33,7 +34,7 @@
   color: var(--color-accent-text);
 }
 
-.btn--primary:hover:not(:disabled) {
+.btn--primary:hover:not(:disabled):not([aria-disabled='true']) {
   border-color: var(--color-accent-hover);
   background: var(--color-accent-hover);
   color: var(--color-accent-text);
@@ -45,7 +46,7 @@
   color: var(--color-text-muted);
 }
 
-.btn--ghost:hover:not(:disabled) {
+.btn--ghost:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--color-surface-2);
 }
 
@@ -55,7 +56,7 @@
   color: var(--color-danger);
 }
 
-.btn--danger:hover:not(:disabled) {
+.btn--danger:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--color-danger);
   color: var(--color-bg);
 }

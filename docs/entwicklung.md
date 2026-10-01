@@ -56,7 +56,7 @@ target/debug/cachyos-center-helper daemon --dev-root /tmp/cc-dev \
   --pacman-conf /tmp/cc-sandbox/pacman.conf --pacman-log /tmp/cc-sandbox/pacman.log --fakeroot
 ```
 
-Eine Debug-Build der Oberfläche nutzt ihn mit `CACHYOS_CENTER_HELPER_BUS=session`.
+Ein Debug-Build der Oberfläche nutzt ihn mit `CACHYOS_CENTER_HELPER_BUS=session`.
 
 Weitere Schalter des Entwicklungsmodus (nur zusammen mit `--dev-root`, nie als root):
 
@@ -68,6 +68,7 @@ Weitere Schalter des Entwicklungsmodus (nur zusammen mit `--dev-root`, nie als r
 | `--auth-timeout-secs N` | Zeitlimit einer Polkit-Prüfung |
 | `--lock-wait-secs N` | maximale Wartezeit auf einen fremden pacman-Lock |
 | `--idle-secs N` | Beenden nach N Sekunden ohne Vorgang |
+
 Die Sandbox-Einrichtung zeigt `crates/helper/tests/sandbox.rs`.
 
 ## TypeScript-Typen
