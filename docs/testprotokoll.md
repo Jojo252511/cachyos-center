@@ -42,7 +42,7 @@ python3 tests/ui/fokus_webkit.py                      # Fokus in WebKitGTK, eige
 
 ## Ergebnisse
 
-Lauf vom 2026-10-01 auf dem Entwicklungsrechner, Rust auf Commit `a905b3a` (nach Prüfdurchlauf 2, seitdem unverändert), Oberfläche auf Commit `d322ed1` (nach Prüfdurchlauf 4).
+Lauf vom 2026-10-01 auf dem Entwicklungsrechner, Rust auf Commit `a905b3a` (nach Prüfdurchlauf 2, seitdem unverändert), Oberfläche auf Commit `1605ef1` (nach Prüfdurchlauf 5).
 
 | Befehl | Ergebnis |
 |---|---|
