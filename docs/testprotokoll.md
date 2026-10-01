@@ -51,7 +51,7 @@ Lauf vom 2026-10-01 auf dem Entwicklungsrechner, Rust auf Commit `a905b3a` (nach
 | `CC_REQUIRE_BRIDGE=1 CC_REQUIRE_SANDBOX=1 cargo test --workspace --locked` | **298 bestanden, 0 fehlgeschlagen**, 3 ignoriert (Netzwerk) |
 | `cargo test --workspace --locked -- --ignored` | 3 von 3 bestanden: `isolated_update_check`, `fetches_the_official_feeds`, `notify_only_checks_without_installing` |
 | `npm run typecheck`, `npm run lint` | sauber |
-| `npm test` | **101 bestanden** in 18 Testdateien |
+| `npm test` | **104 bestanden** in 19 Testdateien |
 | `npm run build` | erfolgreich |
 | `npm audit --audit-level=high` | 0 Schwachstellen |
 | `python3 tests/ui/fokus_webkit.py` | WebKitGTK 2.52.6: 5 Szenarien, **12 von 12 Erwartungen erfüllt**; Gegenprobe mit abgeschalteter Fokus-Rettung: 4 Fehler (Fokus auf `<body>`) |
@@ -109,7 +109,7 @@ soweit sie nicht durch einen neueren Push abgebrochen wurden; gitleaks fand kein
 | `checkupdates` blockiert nie an einer vollen Pipe; Zeitüberschreitung wird gemeldet | `check.rs`: `long_output_never_blocks_the_check`, `timeout_is_reported` | bestanden |
 | MCP nur lesend, standardmäßig aus, stdout nur Protokoll; ohne Prüfung `updateCount: null` statt 0 | `crates/mcp/tests/host.rs`, `crates/mcp/src/tests.rs` | bestanden |
 | Paketierung passt zum Code (Bus-Name, Polkit-Aktionen, Units, Fensterklasse, Pfade) | `crates/core/tests/packaging.rs` | bestanden |
-| Oberfläche: Upgrade-/Installations-/Entfernen-Dialog, Planabweichung, Fortschritt, Auto-Update, Fokusführung (Dialoge, Paketdetails, Vorgangsergebnis, Abbrechen, News, Buttons im Zustand „busy“, Bedienelemente, die ein Zustandswechsel entfernt oder deaktiviert: erste Prüfung aus dem Leerzustand und auf der Übersicht, „Erneut prüfen“, „Übernehmen“, Seitenblättern, Rückgabe aus Dialogen), Hinweis auf Teilaktualisierung, zurückgehaltene Pakete | `apps/desktop/src/**/*.test.ts(x)`, darunter `lib/focus.test.ts` und `components/Button.test.tsx`; die Fokus-Tests sind per Mutationsprobe gegen das alte Verhalten geprüft (ohne Fokus-Rettung, ohne Fokusgruppe, ohne Fokusziele, ohne `MutationObserver`, ohne Busy-Sperre: jeweils rot) | bestanden |
+| Oberfläche: Upgrade-/Installations-/Entfernen-Dialog, Planabweichung, Fortschritt, Auto-Update, Fokusführung (Dialoge, Paketdetails, Vorgangsergebnis, Abbrechen, News, Buttons im Zustand „busy“, Bedienelemente, die ein Zustandswechsel entfernt oder deaktiviert: erste Prüfung aus dem Leerzustand und auf der Übersicht, „Erneut prüfen“, „Übernehmen“, Seitenblättern, „Zum Ende springen“ im Protokoll, Rückgabe aus Dialogen), Hinweis auf Teilaktualisierung, zurückgehaltene Pakete | `apps/desktop/src/**/*.test.ts(x)`, darunter `lib/focus.test.ts` und `components/Button.test.tsx`; die Fokus-Tests sind per Mutationsprobe gegen das alte Verhalten geprüft (ohne Fokus-Rettung, ohne Fokusgruppe, ohne Fokusziele, ohne `MutationObserver`, Nachfolger erst nach dem Entfernen gesucht, ohne Busy-Sperre: jeweils rot) | bestanden |
 
 ## Manuelle Prüfungen auf dem Entwicklungsrechner
 

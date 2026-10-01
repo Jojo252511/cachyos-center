@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { focusSoon, focusWithSuccessor, watchFocusLoss } from './focus';
+import { focusSoon, focusWithSuccessor, successorsOf, watchFocusLoss } from './focus';
 
 /** Lets the zero timeouts of the check and of `focusSoon` run. */
 const settle = () => new Promise((resolve) => window.setTimeout(resolve, 10));
@@ -59,6 +59,17 @@ describe('watchFocusLoss', () => {
     byId('panel').remove();
     await settle();
     expect(byId('header-check')).toHaveFocus();
+  });
+
+  it('applies the fallback of an ancestor that stays in the document', async () => {
+    mount(
+      '<section data-focus-fallback="panel-title"><h2 id="panel-title" tabindex="-1">Systemupgrade</h2><div id="cancel-row"><button id="cancel">Abbrechen</button></div></section>',
+    );
+    byId('cancel').focus();
+    // Only the row is removed: its ancestors are no longer reachable from the removed button.
+    byId('cancel-row').remove();
+    await settle();
+    expect(byId('panel-title')).toHaveFocus();
   });
 
   it('hands the focus to the next focusable element of a focus group', async () => {
@@ -151,6 +162,16 @@ describe('focusWithSuccessor', () => {
     document.body.innerHTML = '<h1 id="page-title" tabindex="-1">Software</h1><button id="opener">Installieren</button>';
     focusWithSuccessor(byId('opener'));
     expect(byId('opener')).toHaveFocus();
+  });
+
+  it('uses successors looked up before the element was removed', () => {
+    document.body.innerHTML =
+      '<h1 id="page-title" tabindex="-1">Updates</h1><section data-focus-fallback="panel-title"><h2 id="panel-title" tabindex="-1">Systemupgrade</h2><div id="notice"><button id="opener">Plan prüfen</button></div></section>';
+    const opener = byId('opener');
+    const successors = successorsOf(opener);
+    byId('notice').remove();
+    focusWithSuccessor(opener, successors);
+    expect(byId('panel-title')).toHaveFocus();
   });
 
   it('focuses the declared fallback of a disabled element', () => {

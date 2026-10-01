@@ -85,8 +85,9 @@ den DOM. Das neue Ziel wird im Markup festgelegt:
 | `data-focus-fallback="id"` | das Element mit dieser ID erhält den Fokus (z. B. Fehlerpanel → Prüfen-Button der Kopfzeile) |
 | `data-focus-group` | das erste noch fokussierbare Element der Gruppe erhält ihn (Kopfzeilen-Aktionen, Seitenblättern, Paketzeile) |
 
-Ohne Angabe erhält die Seitenüberschrift den Fokus. Dialoge geben den Fokus nach dem Schließen
-nach denselben Regeln zurück. Neue Bedienelemente, die bei einem Zustandswechsel verschwinden,
+Ohne Angabe erhält die Seitenüberschrift den Fokus. Die Ziele werden ermittelt, sobald ein Element
+den Fokus erhält; ein Attribut an einem Vorfahren gilt deshalb auch dann, wenn nur ein Teil
+darunter verschwindet. Dialoge geben den Fokus nach dem Schließen nach denselben Regeln zurück. Neue Bedienelemente, die bei einem Zustandswechsel verschwinden,
 bekommen ein passendes Ziel und einen Test.
 
 ## TypeScript-Typen

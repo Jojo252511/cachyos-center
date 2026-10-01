@@ -38,14 +38,27 @@ function firstFocusable(group: Element | null | undefined): HTMLElement | null {
   return null;
 }
 
+/** The closest elements that declare a successor for the focus of an element. */
+export interface Successors {
+  fallback: Element | null;
+  group: Element | null;
+}
+
 /**
- * Focuses `element`, or its declared successor when it is gone or disabled.
- * `group` is the focus group the element was in; it cannot be looked up from
- * an element that was already removed.
+ * The declared successors of `element`. Look them up while the element is in
+ * the document: once removed, its ancestors outside the removed part are unknown.
  */
-export function focusWithSuccessor(element: HTMLElement | null, group: Element | null = element?.closest(`[${FOCUS_GROUP}]`) ?? null): void {
-  const fallback = element?.closest(`[${FOCUS_FALLBACK}]`)?.getAttribute(FOCUS_FALLBACK);
-  focusFirst(element, fallback ? document.getElementById(fallback) : null, firstFocusable(group));
+export function successorsOf(element: Element | null): Successors {
+  return {
+    fallback: element?.closest(`[${FOCUS_FALLBACK}]`) ?? null,
+    group: element?.closest(`[${FOCUS_GROUP}]`) ?? null,
+  };
+}
+
+/** Focuses `element`, or its declared successor when it is gone or disabled. */
+export function focusWithSuccessor(element: HTMLElement | null, successors: Successors = successorsOf(element)): void {
+  const fallback = successors.fallback?.getAttribute(FOCUS_FALLBACK);
+  focusFirst(element, fallback ? document.getElementById(fallback) : null, firstFocusable(successors.group));
 }
 
 /**
@@ -78,7 +91,7 @@ export function activeElement(): HTMLElement | null {
  */
 export function watchFocusLoss(root: HTMLElement): () => void {
   let focused: HTMLElement | null = null;
-  let group: Element | null = null;
+  let successors = successorsOf(null);
   let timer: number | undefined;
 
   const lost = (element: HTMLElement) => !element.isConnected || element.matches(':disabled');
@@ -90,14 +103,14 @@ export function watchFocusLoss(root: HTMLElement): () => void {
     if (!element || (active instanceof HTMLElement && active !== document.body && active.isConnected)) return;
     focused = null;
     // Still there and usable: the focus was left on purpose, e.g. by a click on an empty area.
-    if (lost(element)) focusWithSuccessor(element, group);
+    if (lost(element)) focusWithSuccessor(element, successors);
   };
   const schedule = () => {
     if (timer === undefined) timer = window.setTimeout(check, 0);
   };
   const track = (event: FocusEvent) => {
     focused = event.target instanceof HTMLElement && root.contains(event.target) ? event.target : null;
-    group = focused?.closest(`[${FOCUS_GROUP}]`) ?? null;
+    successors = successorsOf(focused);
   };
   const observer = new MutationObserver(() => {
     if (focused && lost(focused)) schedule();

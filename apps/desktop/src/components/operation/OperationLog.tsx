@@ -1,5 +1,5 @@
 import { ArrowDownToLine } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 
 import { useI18n } from '../../i18n';
 import { Button } from '../Button';
@@ -11,6 +11,7 @@ import { Button } from '../Button';
 export function OperationLog({ lines, focusRequest = 0 }: { lines: readonly string[]; focusRequest?: number }) {
   const { t } = useI18n();
   const ref = useRef<HTMLPreElement>(null);
+  const logId = useId();
   const [follow, setFollow] = useState(true);
 
   useLayoutEffect(() => {
@@ -39,13 +40,14 @@ export function OperationLog({ lines, focusRequest = 0 }: { lines: readonly stri
         {!follow ? (
           <>
             <span className="muted">{t('operation.logPaused')}</span>
-            <Button size="sm" variant="ghost" icon={<ArrowDownToLine />} onClick={() => setFollow(true)}>
+            {/* The button disappears once the log follows again: the log takes the focus. */}
+            <Button size="sm" variant="ghost" icon={<ArrowDownToLine />} data-focus-fallback={logId} onClick={() => setFollow(true)}>
               {t('operation.logJumpToEnd')}
             </Button>
           </>
         ) : null}
       </div>
-      <pre ref={ref} className="operation-log__body" tabIndex={0} role="log" aria-live="off" aria-label={t('operation.log')} onScroll={onScroll}>
+      <pre ref={ref} id={logId} className="operation-log__body" tabIndex={0} role="log" aria-live="off" aria-label={t('operation.log')} onScroll={onScroll}>
         {lines.length > 0 ? lines.join('\n') : t('operation.logEmpty')}
       </pre>
     </div>

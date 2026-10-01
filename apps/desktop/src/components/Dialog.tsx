@@ -3,7 +3,7 @@ import { Dialog as RadixDialog } from 'radix-ui';
 import { useLayoutEffect, useRef, type ReactNode } from 'react';
 
 import { useI18n } from '../i18n';
-import { focusWithSuccessor } from '../lib/focus';
+import { focusWithSuccessor, successorsOf, type Successors } from '../lib/focus';
 
 export interface AppDialogProps {
   open: boolean;
@@ -26,11 +26,13 @@ export interface AppDialogProps {
 export function AppDialog({ open, onOpenChange, title, description, variant = 'default', footer, children, locked = false }: AppDialogProps) {
   const { t } = useI18n();
   const returnFocus = useRef<HTMLElement | null>(null);
+  const returnSuccessors = useRef<Successors>(successorsOf(null));
   // Layout effects run before Radix moves the focus into the dialog.
   useLayoutEffect(() => {
     if (open) {
       const active = document.activeElement;
       returnFocus.current = active instanceof HTMLElement ? active : null;
+      returnSuccessors.current = successorsOf(returnFocus.current);
     }
   }, [open]);
   const handleOpenChange = (next: boolean) => {
@@ -46,7 +48,7 @@ export function AppDialog({ open, onOpenChange, title, description, variant = 'd
           onCloseAutoFocus={(event) => {
             event.preventDefault();
             // The opener may be gone or disabled by now (e.g. „Installieren“ while the installation runs).
-            focusWithSuccessor(returnFocus.current);
+            focusWithSuccessor(returnFocus.current, returnSuccessors.current);
             returnFocus.current = null;
           }}
           // Without a description the default reference would point to nothing.
