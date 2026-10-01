@@ -41,16 +41,16 @@ cargo deny check advisories licenses bans sources
 
 ## Ergebnisse
 
-Lauf vom 2026-10-01 auf dem Entwicklungsrechner, Commit `df33c67` (nach Prüfdurchlauf 1).
+Lauf vom 2026-10-01 auf dem Entwicklungsrechner, Commit `a905b3a` (nach Prüfdurchlauf 2).
 
 | Befehl | Ergebnis |
 |---|---|
 | `cargo fmt --all --check` | sauber |
 | `cargo clippy --workspace --all-targets --locked -- -D warnings` | keine Warnungen |
-| `CC_REQUIRE_BRIDGE=1 CC_REQUIRE_SANDBOX=1 cargo test --workspace --locked` | **297 bestanden, 0 fehlgeschlagen**, 3 ignoriert (Netzwerk) |
+| `CC_REQUIRE_BRIDGE=1 CC_REQUIRE_SANDBOX=1 cargo test --workspace --locked` | **298 bestanden, 0 fehlgeschlagen**, 3 ignoriert (Netzwerk) |
 | `cargo test --workspace --locked -- --ignored` | 3 von 3 bestanden: `isolated_update_check`, `fetches_the_official_feeds`, `notify_only_checks_without_installing` |
 | `npm run typecheck`, `npm run lint` | sauber |
-| `npm test` | **75 bestanden** in 16 Testdateien |
+| `npm test` | **79 bestanden** in 16 Testdateien |
 | `npm run build` | erfolgreich |
 | `npm audit --audit-level=high` | 0 Schwachstellen |
 | `cargo deny check advisories licenses bans sources` | in CI bestanden (lokal nicht installiert) |
@@ -64,7 +64,7 @@ Rust-Tests je Testprogramm:
 | `core` | Unit-Tests | 132 | – |
 | `core` | `tests/packaging.rs` | 5 | – |
 | `desktop` (Tauri-Backend) | Unit-Tests | 5 | – |
-| `helper` | Unit-Tests | 13 | – |
+| `helper` | Unit-Tests | 14 | – |
 | `helper` | `tests/preflight.rs` | 3 | 1 (Netzwerk) |
 | `helper` | `tests/recovery.rs` | 3 | – |
 | `helper` | `tests/sandbox.rs` (echtes pacman, Polkit-Codepfad) | 12 | – |
@@ -102,12 +102,12 @@ soweit sie nicht durch einen neueren Push abgebrochen wurden; gitleaks fand kein
 | Wiederherstellung nach Helper-Absturz aus Journal und `pacman.log` | `recovery.rs` (3 Tests) | bestanden |
 | Nie „0 Updates“ ohne frische Prüfung; fehlgeschlagener Vorgang macht den Stand veraltet | `system_readonly.rs`: `never_checked_is_not_zero_updates`; `core_readonly.rs`: `failed_transaction_after_check_makes_status_stale` | bestanden |
 | Pläne ohne Lock, produktive Sync-Datenbank unverändert | `system_readonly.rs`: `plans_are_computed_without_taking_the_lock`, `isolated_update_check` | bestanden |
-| Automatikmodus gesperrt, Vorabprüfungen vor Netzwerkzugriff | `preflight.rs`, `updaters.rs`: `blockers`, `experimental_switch` | bestanden |
+| Automatikmodus gesperrt, Vorabprüfungen vor Netzwerkzugriff; begrenztes Warten auf einen fremden Paketmanager ohne Lock-Löschen | `preflight.rs` (Integration und `waits_for_a_foreign_lock_and_never_removes_it`), `updaters.rs`: `blockers`, `experimental_switch` | bestanden |
 | Diagnosebericht ohne Benutzer-, Hostnamen, Home-Pfade, Adressen; ohne frische Prüfung „updates: unknown“ | `core_readonly.rs`: `diagnostic_report_is_sanitized`; `core::sanitize`; `diagnostic.rs`: `counts_are_only_current_after_a_fresh_check` | bestanden |
 | `checkupdates` blockiert nie an einer vollen Pipe; Zeitüberschreitung wird gemeldet | `check.rs`: `long_output_never_blocks_the_check`, `timeout_is_reported` | bestanden |
-| MCP nur lesend, standardmäßig aus, stdout nur Protokoll | `crates/mcp/tests/host.rs` | bestanden |
+| MCP nur lesend, standardmäßig aus, stdout nur Protokoll; ohne Prüfung `updateCount: null` statt 0 | `crates/mcp/tests/host.rs`, `crates/mcp/src/tests.rs` | bestanden |
 | Paketierung passt zum Code (Bus-Name, Polkit-Aktionen, Units, Fensterklasse, Pfade) | `crates/core/tests/packaging.rs` | bestanden |
-| Oberfläche: Upgrade-/Installations-/Entfernen-Dialog, Planabweichung, Fortschritt, Auto-Update, Fokus-Rückgabe nach Dialogen, Hinweis auf Teilaktualisierung, zurückgehaltene Pakete | `apps/desktop/src/**/*.test.tsx` | bestanden |
+| Oberfläche: Upgrade-/Installations-/Entfernen-Dialog, Planabweichung, Fortschritt, Auto-Update, Fokusführung (Dialoge, Paketdetails, Vorgangsergebnis, Abbrechen, News), Hinweis auf Teilaktualisierung, zurückgehaltene Pakete | `apps/desktop/src/**/*.test.tsx` | bestanden |
 
 ## Manuelle Prüfungen auf dem Entwicklungsrechner
 
