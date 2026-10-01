@@ -89,7 +89,8 @@ export function PackageDetails({ reference, onClose, onInstall, onRemove }: Pack
               <TerminalCommand command={`sudo pacman -Rs ${record.id.name}`} />
             </Notice>
           ) : (
-            <div className="details-panel__actions">
+            // Disabled while another operation runs: the title of the details takes the focus.
+            <div className="details-panel__actions" data-focus-fallback="package-details-title">
               {record.installedVersion === null ? (
                 <Button variant="primary" icon={<Download />} disabled={guard.reason !== null} onClick={() => onInstall(record)}>
                   {t('software.install')}

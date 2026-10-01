@@ -18,12 +18,14 @@ export interface NoticeProps {
   /** `alert` for errors that appear after a user action, `status` for live updates. */
   role?: 'alert' | 'status';
   className?: string;
+  /** Id of the element that takes the focus when the notice disappears while it contains the focus. */
+  focusFallback?: string;
 }
 
 /** Callout with icon and text; the tone is never conveyed by color alone. */
-export function Notice({ tone = 'info', title, children, actions, role, className }: NoticeProps) {
+export function Notice({ tone = 'info', title, children, actions, role, className, focusFallback }: NoticeProps) {
   return (
-    <div className={`notice notice--${tone} ${className ?? ''}`} role={role}>
+    <div className={`notice notice--${tone} ${className ?? ''}`} role={role} data-focus-fallback={focusFallback}>
       <span className="notice__icon">{ICONS[tone]}</span>
       <div className="notice__body">
         {title ? <p className="notice__title">{title}</p> : null}

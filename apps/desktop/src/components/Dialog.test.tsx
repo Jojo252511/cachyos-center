@@ -6,23 +6,31 @@ import { describe, expect, it } from 'vitest';
 import { renderI18n } from '../test/utils';
 import { AppDialog } from './Dialog';
 
-/** `disableOpener`: like a start button that stays disabled once an operation runs. */
-function Opener({ disableOpener = false }: { disableOpener?: boolean }) {
+/**
+ * `disableOpener`: like a start button that stays disabled once an operation runs.
+ * `fallback`: the opener declares a successor for the focus (`data-focus-fallback`).
+ */
+function Opener({ disableOpener = false, fallback = false }: { disableOpener?: boolean; fallback?: boolean }) {
   const [open, setOpen] = useState(false);
   const [used, setUsed] = useState(false);
   return (
     <>
       <main id="main-content" tabIndex={-1}>
-        <button
-          type="button"
-          disabled={disableOpener && used}
-          onClick={() => {
-            setUsed(true);
-            setOpen(true);
-          }}
-        >
-          Öffnen
-        </button>
+        <h2 id="details-title" tabIndex={-1}>
+          firefox
+        </h2>
+        <div data-focus-fallback={fallback ? 'details-title' : undefined}>
+          <button
+            type="button"
+            disabled={disableOpener && used}
+            onClick={() => {
+              setUsed(true);
+              setOpen(true);
+            }}
+          >
+            Öffnen
+          </button>
+        </div>
       </main>
       <AppDialog open={open} onOpenChange={setOpen} title="Bestätigen">
         <button type="button">Im Dialog</button>
@@ -51,5 +59,14 @@ describe('AppDialog', () => {
     await user.click(await screen.findByRole('button', { name: 'Schließen' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getByRole('main')).toHaveFocus();
+  });
+
+  it('gives the focus to the declared successor of a disabled opener', async () => {
+    const user = userEvent.setup();
+    renderI18n(<Opener disableOpener fallback />);
+    await user.click(screen.getByRole('button', { name: 'Öffnen' }));
+    await user.click(await screen.findByRole('button', { name: 'Schließen' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'firefox' })).toHaveFocus();
   });
 });

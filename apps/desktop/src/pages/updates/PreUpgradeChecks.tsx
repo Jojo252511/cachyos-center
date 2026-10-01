@@ -176,7 +176,7 @@ export function PreUpgradeChecks({ updates, plan, dashboard, health, news, gate 
                   </li>
                 ))}
               </ul>
-              <Button size="sm" busy={acknowledging} onClick={() => void acknowledge()}>
+              <Button size="sm" busy={acknowledging} data-focus-fallback={newsStatusId} onClick={() => void acknowledge()}>
                 {t('precheck.news.markRead')}
               </Button>
             </>

@@ -19,6 +19,9 @@ Alle nennenswerten Änderungen dieses Projekts. Format angelehnt an
 - Arch-Paketierung (PKGBUILD, Polkit-Policy, D-Bus-Aktivierung, systemd-Units), CI mit
   Secret-Scan der gesamten Git-Historie (gitleaks).
 - Statusseite mit Meilensteinen, Abweichungen und nächsten Schritten (`docs/status.md`).
+- Tastaturfokus bleibt erhalten, wenn ein Zustandswechsel das fokussierte Bedienelement entfernt
+  oder deaktiviert (z. B. die erste Updateprüfung, „Erneut prüfen“, „Übernehmen“); Prüfskript
+  `tests/ui/fokus_webkit.py` mit echten Tastendrücken in WebKitGTK.
 
 ### Sicherheit
 - Jede schreibende Helper-Methode prüft den Bus-Absender per Polkit, auch das Abbrechen (eigene

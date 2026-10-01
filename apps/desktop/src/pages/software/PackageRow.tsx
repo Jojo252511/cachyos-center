@@ -20,7 +20,8 @@ export function PackageRow({ pkg, selected, onSelect, onInstall, installDisabled
   const { t } = useI18n();
   const version = pkg.installedVersion ?? pkg.availableVersion ?? '';
   return (
-    <li className={`package-row ${selected ? 'package-row--selected' : ''}`}>
+    // The install button disappears once the package is installed: the row button takes the focus.
+    <li className={`package-row ${selected ? 'package-row--selected' : ''}`} data-focus-group>
       <button type="button" className="package-row__main" onClick={onSelect} aria-pressed={selected} aria-label={t('software.showDetails', { name: pkg.name })}>
         <span className="package-row__head">
           <span className="package-row__name">{pkg.name}</span>

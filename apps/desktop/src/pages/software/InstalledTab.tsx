@@ -77,7 +77,8 @@ export function InstalledTab({ selected, onSelect }: { selected: string | null; 
                 <PackageRow key={`${pkg.repository ?? 'local'}/${pkg.name}`} pkg={pkg} selected={selected === pkg.name} onSelect={() => onSelect(pkg)} />
               ))}
             </ul>
-            <nav className="pagination" aria-label={t('software.pagination')}>
+            {/* On the first or last page the button is disabled: the other one takes the focus. */}
+            <nav className="pagination" aria-label={t('software.pagination')} data-focus-group>
               <Button size="sm" icon={<ChevronLeft />} disabled={data.offset === 0} onClick={() => setOffset(Math.max(0, data.offset - PAGE_SIZE))}>
                 {t('software.prevPage')}
               </Button>

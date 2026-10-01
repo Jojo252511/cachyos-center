@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import { useI18n } from '../../i18n';
+import { watchFocusLoss } from '../../lib/focus';
 import { ActivityPage } from '../../pages/ActivityPage';
 import { DashboardPage } from '../../pages/DashboardPage';
 import { SettingsPage } from '../../pages/SettingsPage';
@@ -32,8 +33,12 @@ function Page({ page }: { page: PageId }) {
 export function AppShell() {
   const { t } = useI18n();
   const route = useRoute();
+  const appRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
   const previousPage = useRef(route.page);
+
+  // A re-render that removes or disables the focused element must not drop the focus to <body>.
+  useEffect(() => (appRef.current ? watchFocusLoss(appRef.current) : undefined), []);
 
   // Move focus to the page title after navigation (screen readers announce the new page).
   useEffect(() => {
@@ -49,7 +54,7 @@ export function AppShell() {
   }, [route.page, route.section]);
 
   return (
-    <div className="app">
+    <div className="app" ref={appRef}>
       <a
         className="skip-link"
         href="#main-content"

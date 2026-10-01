@@ -79,6 +79,8 @@ export function AutoUpdateSection() {
   const [ackDone, setAckDone] = useState<number | null>(null);
   const [ackError, setAckError] = useState<AppError | null>(null);
   const timeId = useId();
+  const applyId = useId();
+  const appliedId = useId();
   const data = status.data;
 
   if (status.error && !data) return <Card title={t('settings.auto')} icon={<CalendarClock />}><ErrorState error={status.error} onRetry={status.reload} /></Card>;
@@ -225,15 +227,24 @@ export function AutoUpdateSection() {
       </fieldset>
 
       <div className="apply-row">
-        <Button variant="primary" icon={<Check />} busy={applying} disabled={!dirty || !timeValid || !weekdaysValid || !data.helperAvailable} onClick={() => void apply()}>
+        {/* Saving disables the button (nothing left to apply): the result line takes the focus. */}
+        <Button
+          id={applyId}
+          variant="primary"
+          icon={<Check />}
+          busy={applying}
+          disabled={!dirty || !timeValid || !weekdaysValid || !data.helperAvailable}
+          data-focus-fallback={appliedId}
+          onClick={() => void apply()}
+        >
           {applying ? t('settings.auto.applying') : t('settings.auto.apply')}
         </Button>
-        <span role="status" className="apply-row__status">
+        <span role="status" className="apply-row__status" id={appliedId} tabIndex={-1}>
           {applied ? t('settings.auto.applied') : dirty ? t('settings.auto.unsaved') : ''}
         </span>
       </div>
       <p className="field__hint">{t('settings.auto.applyHint')}</p>
-      {applyError ? <ErrorPanel error={applyError} announce onRetry={() => void apply()} /> : null}
+      {applyError ? <ErrorPanel error={applyError} announce onRetry={() => void apply()} focusFallback={applyId} /> : null}
 
       <h3 className="card__subtitle">{t('settings.auto.status')}</h3>
       <KeyValueList>

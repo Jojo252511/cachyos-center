@@ -256,7 +256,13 @@ export function OperationView(props: OperationViewProps) {
   const label = operation ? stateLabel(operation, i18n) : t('operation.starting');
 
   return (
-    <section className={`operation-panel ${terminal ? 'operation-panel--done' : ''}`} aria-label={t('operation.panelLabel')} id="operation-panel">
+    <section
+      className={`operation-panel ${terminal ? 'operation-panel--done' : ''}`}
+      aria-label={t('operation.panelLabel')}
+      id="operation-panel"
+      // A control that disappears with a state change (e.g. „Abbrechen“) hands the focus to the panel title.
+      data-focus-fallback="operation-panel-title"
+    >
       <header className="operation-panel__header">
         <span className="operation-panel__icon">
           <StateIcon operation={operation} />

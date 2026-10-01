@@ -23,6 +23,9 @@ import { useResource } from '../state/useResource';
 import { PreUpgradeChecks } from './updates/PreUpgradeChecks';
 import { UpdateTable } from './updates/UpdateTable';
 
+/** The check button in the header; it takes the focus when another check button or an error panel disappears. */
+const CHECK_BUTTON_ID = 'updates-check';
+
 export function UpdatesPage() {
   const { t, fmt } = useI18n();
   const status = useStatus();
@@ -74,7 +77,7 @@ export function UpdatesPage() {
       subtitle={partial ? t('updates.subtitleHeldBack') : t('updates.subtitle')}
       actions={
         <>
-          <Button icon={<RefreshCw />} busy={status.checking} disabled={updates.status === 'unsupported'} onClick={() => void status.checkUpdates()}>
+          <Button id={CHECK_BUTTON_ID} icon={<RefreshCw />} busy={status.checking} disabled={updates.status === 'unsupported'} onClick={() => void status.checkUpdates()}>
             {status.checking ? t('updates.checking') : t('updates.check')}
           </Button>
           <Button variant="primary" icon={<Download />} disabled={!canInstall} aria-describedby={showReason ? 'install-reason' : undefined} onClick={() => setDialogOpen(true)}>
@@ -105,7 +108,9 @@ export function UpdatesPage() {
           <Spinner label={t('updates.checkingHint')} />
         </Notice>
       ) : null}
-      {status.checkError ? <ErrorPanel error={status.checkError} announce onRetry={() => void status.checkUpdates()} retryBusy={status.checking} /> : null}
+      {status.checkError ? (
+        <ErrorPanel error={status.checkError} announce onRetry={() => void status.checkUpdates()} retryBusy={status.checking} focusFallback={CHECK_BUTTON_ID} />
+      ) : null}
 
       {updates.status === 'unsupported' ? (
         <Notice tone="danger" title={t('updates.unsupported.title')}>
@@ -123,7 +128,7 @@ export function UpdatesPage() {
           icon={<CircleArrowUp />}
           title={t('updates.neverChecked.title')}
           action={
-            <Button variant="primary" icon={<RefreshCw />} busy={status.checking} onClick={() => void status.checkUpdates()}>
+            <Button variant="primary" icon={<RefreshCw />} data-focus-fallback={CHECK_BUTTON_ID} onClick={() => void status.checkUpdates()}>
               {t('updates.check')}
             </Button>
           }
@@ -133,7 +138,9 @@ export function UpdatesPage() {
       ) : null}
       {updates.status === 'failed' ? (
         <>
-          {updates.error ? <ErrorPanel error={updates.error} onRetry={() => void status.checkUpdates()} retryBusy={status.checking} /> : null}
+          {updates.error ? (
+            <ErrorPanel error={updates.error} onRetry={() => void status.checkUpdates()} retryBusy={status.checking} focusFallback={CHECK_BUTTON_ID} />
+          ) : null}
           <p className="muted">
             {updates.attemptedAt !== null ? t('updates.lastAttempt', { time: fmt.relative(updates.attemptedAt, now) }) : null}{' '}
             {updates.checkedAt !== null ? t('updates.lastSuccess', { time: fmt.dateTime(updates.checkedAt) }) : null}

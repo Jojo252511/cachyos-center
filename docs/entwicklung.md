@@ -31,6 +31,7 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 (cd apps/desktop && npm run typecheck && npm run lint && npm test && npm run build)
+python3 tests/ui/fokus_webkit.py   # Fokus in WebKitGTK; startet eigenes Xvfb und den Vite-Server
 ```
 
 | Testart | Ort | Hinweis |
@@ -42,7 +43,8 @@ cargo test --workspace
 | Wiederherstellung | `crates/helper/tests/recovery.rs` | Rekonstruktion nach Helper-Absturz aus Journal und pacman.log |
 | Paketierung | `crates/core/tests/packaging.rs` | Namen und Pfade in Code und `packaging/arch` stimmen überein |
 | MCP-Host | `crates/mcp/tests/host.rs` | startet den MCP-Server als Kindprozess und prüft `tools/list` und Tool-Aufrufe |
-| Oberfläche | `apps/desktop/src/**/*.test.tsx` | kritische Dialoge (Upgrade, Installation, Entfernen, Planabweichung, Fortschritt, Auto-Update, Diagnose) |
+| Oberfläche | `apps/desktop/src/**/*.test.ts(x)` | kritische Dialoge (Upgrade, Installation, Entfernen, Planabweichung, Fortschritt, Auto-Update, Diagnose), Fokusführung |
+| Fokus in WebKitGTK | `tests/ui/fokus_webkit.py` | Oberfläche mit Mock-Daten in WebKitGTK 4.1 (Engine der App unter Linux) auf eigenem Xvfb, echte Tastendrücke per XTest; braucht `python-gobject` und `xorg-server-xvfb` |
 
 Fehlende Werkzeuge überspringen die System-/Sandbox-Tests mit Hinweis. In CI erzwingen
 `CC_REQUIRE_BRIDGE=1` und `CC_REQUIRE_SANDBOX=1` ihre Ausführung.
@@ -70,6 +72,22 @@ Weitere Schalter des Entwicklungsmodus (nur zusammen mit `--dev-root`, nie als r
 | `--idle-secs N` | Beenden nach N Sekunden ohne Vorgang |
 
 Die Sandbox-Einrichtung zeigt `crates/helper/tests/sandbox.rs`.
+
+## Tastaturfokus
+
+Verschwindet ein fokussiertes Bedienelement durch einen Zustandswechsel oder wird es deaktiviert,
+setzt `watchFocusLoss` (`apps/desktop/src/lib/focus.ts`, aktiv in der App-Shell) den Fokus neu.
+WebKitGTK meldet das Entfernen ohne `blur`-Ereignis; deshalb beobachtet ein `MutationObserver`
+den DOM. Das neue Ziel wird im Markup festgelegt:
+
+| Attribut | Wirkung |
+|---|---|
+| `data-focus-fallback="id"` | das Element mit dieser ID erhält den Fokus (z. B. Fehlerpanel → Prüfen-Button der Kopfzeile) |
+| `data-focus-group` | das erste noch fokussierbare Element der Gruppe erhält ihn (Kopfzeilen-Aktionen, Seitenblättern, Paketzeile) |
+
+Ohne Angabe erhält die Seitenüberschrift den Fokus. Dialoge geben den Fokus nach dem Schließen
+nach denselben Regeln zurück. Neue Bedienelemente, die bei einem Zustandswechsel verschwinden,
+bekommen ein passendes Ziel und einen Test.
 
 ## TypeScript-Typen
 

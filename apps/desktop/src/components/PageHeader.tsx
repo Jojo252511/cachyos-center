@@ -10,7 +10,12 @@ export function PageHeader({ title, subtitle, actions }: { title: ReactNode; sub
         </h1>
         {subtitle ? <p className="page-header__subtitle">{subtitle}</p> : null}
       </div>
-      {actions ? <div className="page-header__actions">{actions}</div> : null}
+      {/* An action that disappears (e.g. „Jetzt prüfen“ replaced by „Updates ansehen“) hands the focus to the next one. */}
+      {actions ? (
+        <div className="page-header__actions" data-focus-group>
+          {actions}
+        </div>
+      ) : null}
     </header>
   );
 }

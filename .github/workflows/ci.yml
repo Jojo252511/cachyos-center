@@ -29,7 +29,7 @@ jobs:
         run: |
           pacman -Syu --noconfirm --needed git rust nodejs npm pkgconf \
             webkit2gtk-4.1 libsoup3 gtk3 librsvg sqlite curl \
-            pacman-contrib fakeroot dbus xorg-server-xvfb
+            pacman-contrib fakeroot dbus xorg-server-xvfb python-gobject libxtst
       - uses: actions/checkout@v7
       - name: Create unprivileged build user
         run: useradd -m builder
@@ -64,6 +64,8 @@ jobs:
             dbus-run-session -- xvfb-run -a timeout 15 target/debug/cachyos-center || rc=$?
           echo "exit code: $rc (124 = still running after 15 s)"
           test "$rc" -eq 124
+      - name: Keyboard focus in WebKitGTK (real key presses, mock data)
+        run: runuser -u builder -- env HOME=/home/builder dbus-run-session -- python3 tests/ui/fokus_webkit.py
 
   frontend:
     name: Frontend (typecheck, lint, tests, build, audit)

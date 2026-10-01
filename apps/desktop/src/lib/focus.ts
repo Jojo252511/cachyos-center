@@ -1,12 +1,23 @@
 /**
  * Keyboard focus after an element disappears (closing a panel, dismissing a
- * result, a button that is no longer rendered). Without this the focus falls
- * back to <body> and keyboard and screen reader users lose their place.
+ * result, a button that is no longer rendered or is disabled). Without this
+ * the focus falls back to <body> and keyboard and screen reader users lose
+ * their place.
+ *
+ * Successors are declared in the markup:
+ * - `data-focus-fallback="id"`: the element with this id takes the focus when
+ *   the marked element, or a focused element inside it, disappears;
+ * - `data-focus-group`: the first focusable element left in the group takes it.
+ * Without either the page title takes it, then the main content.
  */
 
-function canTakeFocus(element: HTMLElement | null | undefined): element is HTMLElement {
-  if (!element || !element.isConnected || element === document.body) return false;
-  return !(element instanceof HTMLButtonElement && element.disabled);
+export const FOCUS_FALLBACK = 'data-focus-fallback';
+export const FOCUS_GROUP = 'data-focus-group';
+
+const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+function canTakeFocus(element: Element | null | undefined): element is HTMLElement {
+  return element instanceof HTMLElement && element.isConnected && element !== document.body && !element.matches(':disabled');
 }
 
 /** Focuses the first candidate that can take the focus, else the page title, else the main content. */
@@ -17,6 +28,24 @@ export function focusFirst(...candidates: Array<HTMLElement | null | undefined>)
       if (document.activeElement === candidate) return;
     }
   }
+}
+
+function firstFocusable(group: Element | null | undefined): HTMLElement | null {
+  if (!group?.isConnected) return null;
+  for (const element of group.querySelectorAll(FOCUSABLE)) {
+    if (canTakeFocus(element)) return element;
+  }
+  return null;
+}
+
+/**
+ * Focuses `element`, or its declared successor when it is gone or disabled.
+ * `group` is the focus group the element was in; it cannot be looked up from
+ * an element that was already removed.
+ */
+export function focusWithSuccessor(element: HTMLElement | null, group: Element | null = element?.closest(`[${FOCUS_GROUP}]`) ?? null): void {
+  const fallback = element?.closest(`[${FOCUS_FALLBACK}]`)?.getAttribute(FOCUS_FALLBACK);
+  focusFirst(element, fallback ? document.getElementById(fallback) : null, firstFocusable(group));
 }
 
 /**
@@ -32,4 +61,55 @@ export function focusSoon(target?: () => HTMLElement | null | undefined): void {
 export function activeElement(): HTMLElement | null {
   const active = document.activeElement;
   return active instanceof HTMLElement && active !== document.body ? active : null;
+}
+
+/**
+ * Keeps the keyboard focus when a re-render removes or disables the focused
+ * element inside `root`: a button replaced by a link, an empty state or error
+ * panel that disappears, an apply button that is disabled after saving.
+ * Browsers move the focus to <body> then. WebKitGTK, the engine of the app on
+ * Linux, fires no blur event for a removed element, so removals are observed
+ * with a MutationObserver (like the focus trap of the Radix dialogs); for a
+ * disabled element it fires a late blur, handled through `focusout`.
+ *
+ * The check runs after a zero timeout, so focus moves that an event handler
+ * scheduled with `focusSoon` come first. Dialogs render outside `root` and
+ * restore the focus themselves. Returns the function that stops watching.
+ */
+export function watchFocusLoss(root: HTMLElement): () => void {
+  let focused: HTMLElement | null = null;
+  let group: Element | null = null;
+  let timer: number | undefined;
+
+  const lost = (element: HTMLElement) => !element.isConnected || element.matches(':disabled');
+
+  const check = () => {
+    timer = undefined;
+    const element = focused;
+    const active = document.activeElement;
+    if (!element || (active instanceof HTMLElement && active !== document.body && active.isConnected)) return;
+    focused = null;
+    // Still there and usable: the focus was left on purpose, e.g. by a click on an empty area.
+    if (lost(element)) focusWithSuccessor(element, group);
+  };
+  const schedule = () => {
+    if (timer === undefined) timer = window.setTimeout(check, 0);
+  };
+  const track = (event: FocusEvent) => {
+    focused = event.target instanceof HTMLElement && root.contains(event.target) ? event.target : null;
+    group = focused?.closest(`[${FOCUS_GROUP}]`) ?? null;
+  };
+  const observer = new MutationObserver(() => {
+    if (focused && lost(focused)) schedule();
+  });
+
+  observer.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['disabled'] });
+  document.addEventListener('focusin', track);
+  document.addEventListener('focusout', schedule);
+  return () => {
+    observer.disconnect();
+    document.removeEventListener('focusin', track);
+    document.removeEventListener('focusout', schedule);
+    window.clearTimeout(timer);
+  };
 }

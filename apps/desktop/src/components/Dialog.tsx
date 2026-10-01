@@ -3,6 +3,7 @@ import { Dialog as RadixDialog } from 'radix-ui';
 import { useLayoutEffect, useRef, type ReactNode } from 'react';
 
 import { useI18n } from '../i18n';
+import { focusWithSuccessor } from '../lib/focus';
 
 export interface AppDialogProps {
   open: boolean;
@@ -15,20 +16,6 @@ export interface AppDialogProps {
   children?: ReactNode;
   /** Prevents closing while a start request is in flight. */
   locked?: boolean;
-}
-
-/** Focuses `element` when it can still take the focus, otherwise the main content. */
-function restoreFocus(element: HTMLElement | null): void {
-  const usable =
-    element !== null &&
-    element.isConnected &&
-    !(element instanceof HTMLButtonElement && element.disabled) &&
-    element !== document.body;
-  if (usable) {
-    element.focus();
-    if (document.activeElement === element) return;
-  }
-  document.getElementById('main-content')?.focus();
 }
 
 /**
@@ -58,7 +45,8 @@ export function AppDialog({ open, onOpenChange, title, description, variant = 'd
           className={`dialog dialog--${variant}`}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
-            restoreFocus(returnFocus.current);
+            // The opener may be gone or disabled by now (e.g. „Installieren“ while the installation runs).
+            focusWithSuccessor(returnFocus.current);
             returnFocus.current = null;
           }}
           // Without a description the default reference would point to nothing.

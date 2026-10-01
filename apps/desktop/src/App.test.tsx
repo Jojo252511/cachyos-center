@@ -1,9 +1,11 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { api } from './api/client';
+import { createMockTransport } from './api/mock';
 import type { Operation } from './bindings/Operation';
+import type { UpdateCheckResult } from './bindings/UpdateCheckResult';
 import { App } from './App';
 import { OperationPanel } from './components/operation/OperationPanel';
 import { SettingsPage } from './pages/SettingsPage';
@@ -127,6 +129,19 @@ describe('settings', () => {
     expect(writeClipboard).toHaveBeenCalledWith(config.textContent);
   });
 });
+
+/** Holds `check_updates` back until the returned function runs: busy state first, result later. */
+function holdCheck(): () => void {
+  let release: () => void = () => undefined;
+  const original = api.checkUpdates.bind(api);
+  vi.spyOn(api, 'checkUpdates').mockImplementation(
+    () =>
+      new Promise((resolve, reject) => {
+        release = () => void original().then(resolve, reject);
+      }),
+  );
+  return () => release();
+}
 
 describe('focus after closing non-modal parts', () => {
   it('gives the focus back to the package row when the details close', async () => {
@@ -265,5 +280,105 @@ describe('focus after closing non-modal parts', () => {
     release();
     const done = await screen.findByRole('button', { name: 'Jetzt prüfen' });
     expect(done).toHaveFocus();
+  });
+});
+
+describe('focus when a re-render removes or disables the focused control', () => {
+  it('hands the focus to the header check button when the first check replaces the empty state', async () => {
+    const user = userEvent.setup();
+    mockBackend('neverChecked');
+    const release = holdCheck();
+    window.location.hash = '#/updates';
+    render(<App />);
+    await screen.findByText('Noch keine Updateprüfung');
+    const header = document.getElementById('updates-check');
+    const empty = screen.getAllByRole('button', { name: 'Jetzt prüfen' }).find((button) => button !== header);
+    if (!header || !empty) throw new Error('check buttons missing');
+    empty.focus();
+    await user.keyboard('{Enter}');
+    // The empty state is gone while the check runs; the header button shows the check and has the focus.
+    await waitFor(() => expect(header).toHaveFocus());
+    expect(empty.isConnected).toBe(false);
+    expect(header).toHaveAccessibleName('Prüfung läuft …');
+    release();
+    await waitFor(() => expect(header).toHaveAccessibleName('Jetzt prüfen'));
+    expect(header).toHaveFocus();
+  });
+
+  it('hands the focus to „Updates ansehen“ when the first check on the overview finds updates', async () => {
+    const user = userEvent.setup();
+    mockBackend('neverChecked');
+    const release = holdCheck();
+    render(<App />);
+    const check = await screen.findByRole('button', { name: 'Jetzt prüfen' });
+    check.focus();
+    await user.keyboard('{Enter}');
+    expect(await screen.findByRole('button', { name: 'Prüfung läuft …' })).toHaveFocus();
+    release();
+    const view = await screen.findByRole('link', { name: 'Updates ansehen' });
+    // The button was replaced by a link, a different element: the focus follows it.
+    expect(check.isConnected).toBe(false);
+    await waitFor(() => expect(view).toHaveFocus());
+  });
+
+  it('keeps the focus when „Erneut prüfen“ removes the error of a rejected check', async () => {
+    const user = userEvent.setup();
+    mockBackend();
+    const original = api.checkUpdates.bind(api);
+    let release: () => void = () => undefined;
+    vi.spyOn(api, 'checkUpdates')
+      .mockRejectedValueOnce({ code: 'BUSY', message: 'another update check is running', detail: null })
+      .mockImplementation(
+        () =>
+          new Promise((resolve, reject) => {
+            release = () => void original().then(resolve, reject);
+          }),
+      );
+    window.location.hash = '#/updates';
+    render(<App />);
+    const header = await screen.findByRole('button', { name: 'Jetzt prüfen' });
+    await user.click(header);
+    const retry = await screen.findByRole('button', { name: 'Erneut prüfen' });
+    retry.focus();
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(header).toHaveFocus());
+    expect(retry.isConnected).toBe(false);
+    release();
+    await waitFor(() => expect(header).toHaveAccessibleName('Jetzt prüfen'));
+    expect(header).toHaveFocus();
+  });
+
+  it('keeps the focus when a successful retry removes the error panel of a failed check', async () => {
+    const user = userEvent.setup();
+    mockBackend('offline');
+    const online = createMockTransport('?scenario=default', { latency: false });
+    vi.spyOn(api, 'checkUpdates').mockImplementation(() => online.invoke<UpdateCheckResult>('check_updates'));
+    window.location.hash = '#/updates';
+    render(<App />);
+    const retry = await screen.findByRole('button', { name: 'Erneut prüfen' });
+    retry.focus();
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(retry.isConnected).toBe(false));
+    await waitFor(() => expect(document.getElementById('updates-check')).toHaveFocus());
+  });
+
+  it('moves the focus to the result line when saving disables „Übernehmen“', async () => {
+    const user = userEvent.setup();
+    mockBackend();
+    window.location.hash = '#/settings';
+    render(<App />);
+    await user.click(await screen.findByRole('radio', { name: /Nur benachrichtigen/ }));
+    const apply = screen.getByRole('button', { name: 'Übernehmen' });
+    apply.focus();
+    await user.keyboard('{Enter}');
+    const applied = await screen.findByText('Richtlinie übernommen.');
+    await waitFor(() => expect(apply).toBeDisabled());
+    // jsdom keeps the focus on a disabled button; WebKitGTK and Chromium blur it shortly after.
+    act(() => {
+      apply.removeAttribute('disabled');
+      apply.blur();
+      apply.setAttribute('disabled', '');
+    });
+    await waitFor(() => expect(applied).toHaveFocus());
   });
 });

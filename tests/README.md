@@ -9,7 +9,8 @@
 | `crates/helper/tests/recovery.rs` | Wiederherstellung nach Helper-Absturz |
 | `crates/core/tests/packaging.rs` | Konsistenz zwischen Code und Paketierung |
 | `crates/mcp/tests/host.rs` | MCP-Server gegen einen MCP-Host (rmcp-Client) |
-| `apps/desktop/src/**/*.test.tsx` | Oberfläche: kritische Dialoge und Zustände |
+| `apps/desktop/src/**/*.test.ts(x)` | Oberfläche: kritische Dialoge, Zustände und Fokusführung (jsdom) |
+| `ui/fokus_webkit.py` | Fokusführung mit echten Tastendrücken in WebKitGTK (eigenes Xvfb, Mock-Daten) |
 | [`vm/`](vm/) | Prüfprotokoll und Skript für den End-to-End-Test auf einer CachyOS-VM |
 
 Befehle und Ergebnisse: [docs/testprotokoll.md](../docs/testprotokoll.md).

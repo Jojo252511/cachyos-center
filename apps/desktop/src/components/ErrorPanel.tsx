@@ -22,12 +22,14 @@ export interface ErrorPanelProps {
   /** Errors after a user action are announced (`role="alert"`). */
   announce?: boolean;
   tone?: NoticeTone;
+  /** Id of the element that takes the focus when the panel disappears, e.g. after „Erneut prüfen“. */
+  focusFallback?: string;
 }
 
 const WARNING_CODES = new Set(['BUSY', 'OFFLINE', 'STALE', 'NOT_AUTHORIZED', 'PREREQUISITE_MISSING', 'BLOCKED', 'CONFLICT']);
 
 /** Localized error with its concrete next steps and the technical detail on demand. */
-export function ErrorPanel({ error, onRetry, retryLabel, retryBusy, onViewLog, command, title, announce = false, tone }: ErrorPanelProps) {
+export function ErrorPanel({ error, onRetry, retryLabel, retryBusy, onViewLog, command, title, announce = false, tone, focusFallback }: ErrorPanelProps) {
   const { t } = useI18n();
   const info = describeError(error, t, command ? { command } : undefined);
   const showRetry = info.actions.includes('retry') && onRetry;
@@ -40,6 +42,7 @@ export function ErrorPanel({ error, onRetry, retryLabel, retryBusy, onViewLog, c
       title={title ?? info.title}
       role={announce ? 'alert' : undefined}
       className="error-panel"
+      focusFallback={focusFallback}
       actions={
         showRetry || showLog || showDocs ? (
           <>
