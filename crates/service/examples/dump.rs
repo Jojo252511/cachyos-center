@@ -1,6 +1,8 @@
 //! Developer tool: prints what the application core sees on this machine.
 //!
-//! `cargo run -p cachyos-center-service --example dump -- [dashboard|system|health|updates|activity|autoupdate|report|hyprland]`
+//! `cargo run -p cachyos-center-service --example dump -- [dashboard|system|health|updates|check|activity|autoupdate|report|hyprland]`
+//!
+//! `check` runs an isolated update check (network, user cache only).
 
 use cachyos_center_service::AppCore;
 
@@ -20,6 +22,7 @@ fn main() {
         "system" => serde_json::to_string_pretty(&core.system_info()),
         "health" => serde_json::to_string_pretty(&core.health_report()),
         "updates" => serde_json::to_string_pretty(&core.last_check()),
+        "check" => serde_json::to_string_pretty(&core.check_updates()),
         "activity" => serde_json::to_string_pretty(&core.activity(20)),
         "autoupdate" => serde_json::to_string_pretty(&core.auto_update_status()),
         "hyprland" => serde_json::to_string_pretty(&core.hyprland()),
