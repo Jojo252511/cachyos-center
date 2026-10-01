@@ -50,6 +50,13 @@ describe('package action guards', () => {
     expect(await screen.findByRole('button', { name: 'Installieren' })).toBeDisabled();
   });
 
+  it('does not call an online upgrade complete while packages are held back', async () => {
+    mockBackend('offlineConfHeld');
+    renderApp(<UpdatesPage />);
+    expect(await screen.findByText(/ohne die von der pacman-Konfiguration zurückgehaltenen Pakete/)).toBeInTheDocument();
+    expect(screen.queryByText('Vollständiges Systemupgrade mit pacman -Syu')).toBeNull();
+  });
+
   it('blocks package changes without the helper service', async () => {
     mockBackend('helperMissing');
     renderApp(<UpdatesPage />);

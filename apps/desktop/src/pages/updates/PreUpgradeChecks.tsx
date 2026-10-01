@@ -43,7 +43,7 @@ export interface PreUpgradeChecksProps {
 }
 
 /**
- * „Vor dem Upgrade“: network, disk space, lock, mirror/signatures, news,
+ * „Vor dem Upgrade“: network, disk space, lock, mirror, package signatures, news,
  * other updaters and snapshot status. Uncertain items are „unbekannt“.
  */
 export function PreUpgradeChecks({ updates, plan, dashboard, health, news, gate }: PreUpgradeChecksProps) {
@@ -76,7 +76,7 @@ export function PreUpgradeChecks({ updates, plan, dashboard, health, news, gate 
   const locked = dashboard?.lock.state === 'locked';
   const lockState: CheckState = dashboard ? (locked ? 'blocked' : 'ok') : 'unknown';
 
-  // Mirror and signatures
+  // Mirror (package signatures are only verified while downloading)
   const mirrorError = updates.error && updates.error.code !== 'OFFLINE' ? updates.error : null;
   const mirrorState: CheckState = mirrorError ? 'blocked' : fresh ? 'ok' : 'unknown';
   const mirrorText = mirrorError
@@ -134,6 +134,10 @@ export function PreUpgradeChecks({ updates, plan, dashboard, health, news, gate 
         </CheckRow>
         <CheckRow label={t('precheck.mirror')} state={mirrorState}>
           {mirrorText}
+        </CheckRow>
+        {/* Package signatures are verified by pacman during the download: never "ok" in advance. */}
+        <CheckRow label={t('precheck.signatures')} state="unknown">
+          {t('precheck.signatures.pending')}
         </CheckRow>
         <CheckRow label={t('precheck.news')} state={newsState}>
           {gate.state === 'loading' ? <p>{t('precheck.news.loading')}</p> : null}

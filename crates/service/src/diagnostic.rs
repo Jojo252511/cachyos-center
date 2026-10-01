@@ -12,7 +12,7 @@ use cachyos_center_core::policy::AutoUpdateStatus;
 use cachyos_center_core::sanitize::{SanitizeContext, sanitize};
 use cachyos_center_core::system::{BackendStatus, LockStatus, SystemInfo};
 use cachyos_center_core::timefmt::format_utc;
-use cachyos_center_core::updates::UpdateCheckResult;
+use cachyos_center_core::updates::{CheckStatus, UpdateCheckResult};
 use cachyos_center_core::{APP_VERSION, Timestamp};
 
 fn gib(bytes: u64) -> String {
@@ -31,6 +31,16 @@ pub struct ReportInputs<'a> {
     pub auto_update: &'a AutoUpdateStatus,
     pub activity: &'a [HistoryEntry],
     pub now: Timestamp,
+}
+
+/// A count from the update check. Only a fresh check states a number as
+/// current; the report never claims "0 updates" without one.
+fn update_count(result: &UpdateCheckResult, n: usize) -> String {
+    match result.status {
+        CheckStatus::Fresh => n.to_string(),
+        CheckStatus::Stale => format!("{n} (outdated check)"),
+        _ => "unknown".to_string(),
+    }
 }
 
 pub fn build(input: &ReportInputs<'_>, ctx: &SanitizeContext) -> String {
@@ -150,8 +160,8 @@ pub fn build(input: &ReportInputs<'_>, ctx: &SanitizeContext) -> String {
         "Status: {:?}, checked: {}, updates: {}, held back: {}, reboot recommended: {}",
         u.status,
         ts(u.checked_at),
-        u.updates.len(),
-        u.held_back.len(),
+        update_count(u, u.updates.len()),
+        update_count(u, u.held_back.len()),
         u.reboot_recommended
     );
     if let Some(err) = &u.error {
@@ -209,4 +219,26 @@ pub fn build(input: &ReportInputs<'_>, ctx: &SanitizeContext) -> String {
         );
     }
     sanitize(&r, ctx)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn counts_are_only_current_after_a_fresh_check() {
+        let fresh = UpdateCheckResult::empty(CheckStatus::Fresh);
+        assert_eq!(update_count(&fresh, 0), "0");
+        let stale = UpdateCheckResult::empty(CheckStatus::Stale);
+        assert_eq!(update_count(&stale, 3), "3 (outdated check)");
+        for status in [
+            CheckStatus::NeverChecked,
+            CheckStatus::Failed,
+            CheckStatus::Unsupported,
+            CheckStatus::PrerequisiteMissing,
+        ] {
+            let result = UpdateCheckResult::empty(status);
+            assert_eq!(update_count(&result, 0), "unknown", "{status:?}");
+        }
+    }
 }

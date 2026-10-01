@@ -53,6 +53,8 @@ export function UpdatesPage() {
   }
 
   const plan = updates.plan;
+  // With packages held back by the pacman configuration an online upgrade is not complete.
+  const partial = updates.heldBack.length > 0;
   const hasData = updates.checkedAt !== null && (updates.status === 'fresh' || updates.status === 'stale' || updates.status === 'failed');
   const installReason =
     guard.message ??
@@ -69,7 +71,7 @@ export function UpdatesPage() {
   const header = (
     <PageHeader
       title={t('updates.title')}
-      subtitle={t('updates.subtitle')}
+      subtitle={partial ? t('updates.subtitleHeldBack') : t('updates.subtitle')}
       actions={
         <>
           <Button icon={<RefreshCw />} busy={status.checking} disabled={updates.status === 'unsupported'} onClick={() => void status.checkUpdates()}>
@@ -167,7 +169,7 @@ export function UpdatesPage() {
               }
               icon={<CircleArrowUp />}
             >
-              <p className="muted">{t('updates.list.explanation')}</p>
+              <p className="muted">{partial ? t('updates.list.explanationHeldBack') : t('updates.list.explanation')}</p>
               <UpdateTable updates={updates.updates} caption={t('updates.list.title', { count: updates.updates.length })} />
               <p className="table-footer">
                 {updates.totalDownloadSize !== null ? t('updates.list.totalDownload', { size: fmt.bytes(updates.totalDownloadSize) }) : null}

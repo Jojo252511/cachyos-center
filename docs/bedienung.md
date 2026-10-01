@@ -30,9 +30,10 @@ Ist ein Update für den nächsten Neustart vorbereitet, weist ein Hinweis darauf
    Desktop-Sitzung, Neustart empfohlen). Die Liste ist eine Erklärung, keine Auswahl: installiert
    wird immer das vollständige Systemupgrade. Von der pacman-Konfiguration zurückgehaltene Pakete
    (`IgnorePkg`) stehen getrennt; das Upgrade ist dann nicht vollständig.
-3. **Vor dem Upgrade** zeigt Netzwerk, freien Speicher, Paketmanager-Lock, Spiegel- und
-   Signaturfehler, Arch-/CachyOS-News, andere Update-Dienste und den Snapshot-Status. Was nicht
-   sicher geprüft werden kann, steht als „unbekannt“ da.
+3. **Vor dem Upgrade** zeigt Netzwerk, freien Speicher, Paketmanager-Lock, Spiegelfehler,
+   Paketsignaturen, Arch-/CachyOS-News, andere Update-Dienste und den Snapshot-Status. Was nicht
+   sicher geprüft werden kann, steht als „unbekannt“ da; das gilt immer für die Paketsignaturen,
+   die pacman erst beim Download prüft.
 4. **Installieren** öffnet die Bestätigung mit Paketanzahl, Downloadmenge, Repositories und
    möglichen Folgen. Bei ungelesenen oder nicht abrufbaren News ist eine ausdrückliche Bestätigung
    nötig. Die Authentifizierung übernimmt der Polkit-Dialog der Sitzung.

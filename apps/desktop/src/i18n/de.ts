@@ -462,6 +462,7 @@ export const de = {
   // Updates page
   'updates.title': 'Updates',
   'updates.subtitle': 'Vollständiges Systemupgrade mit pacman -Syu',
+  'updates.subtitleHeldBack': 'Systemupgrade mit pacman -Syu, ohne die von der pacman-Konfiguration zurückgehaltenen Pakete',
   'updates.check': 'Jetzt prüfen',
   'updates.checking': 'Prüfung läuft …',
   'updates.checkingHint':
@@ -491,6 +492,8 @@ export const de = {
   'updates.list.title': { one: '{count} Update', other: '{count} Updates' },
   'updates.list.explanation':
     'Die Liste erklärt, was ein vollständiges Systemupgrade ändert. Einzelne Updates können nicht ausgewählt werden: Arch-basierte Systeme werden immer vollständig aktualisiert, um Teilaktualisierungen zu vermeiden.',
+  'updates.list.explanationHeldBack':
+    'Die Liste erklärt, was das Systemupgrade ändert. Einzelne Updates können nicht ausgewählt werden. Weil die pacman-Konfiguration Pakete zurückhält, ist dieses Online-Upgrade nicht vollständig (siehe unten).',
   'updates.list.totalDownload': 'Gesamter Download: {size}',
   'updates.list.outdated': 'veraltet',
   'updates.heldBack.title': { one: '{count} Paket zurückgehalten', other: '{count} Pakete zurückgehalten' },
@@ -512,10 +515,13 @@ export const de = {
   'precheck.lock': 'Paketverwaltung',
   'precheck.lock.free': 'Keine Sperre (db.lck) aktiv',
   'precheck.lock.locked': 'Gesperrt – ein anderer Paketmanager arbeitet',
-  'precheck.mirror': 'Mirror und Signaturen',
-  'precheck.mirror.ok': 'Letzte Synchronisation ohne Fehler. Paketsignaturen prüft pacman beim Download.',
+  'precheck.mirror': 'Mirror',
+  'precheck.mirror.ok': 'Letzte Synchronisation ohne Fehler.',
   'precheck.mirror.error': 'Fehler bei der letzten Prüfung: {error}',
   'precheck.mirror.unknown': 'unbekannt',
+  'precheck.signatures': 'Paketsignaturen',
+  'precheck.signatures.pending':
+    'Noch nicht prüfbar: pacman prüft die Signaturen beim Download und bricht bei einem Fehler vor der Installation ab.',
   'precheck.news': 'Arch-/CachyOS-News',
   'precheck.news.none': 'Keine ungelesenen Meldungen (Stand: {time})',
   'precheck.news.unread': { one: '{count} ungelesene Meldung', other: '{count} ungelesene Meldungen' },

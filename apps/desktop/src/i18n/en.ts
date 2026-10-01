@@ -449,6 +449,7 @@ export const en: Record<MessageKey, Message> = {
   // Updates page
   'updates.title': 'Updates',
   'updates.subtitle': 'Complete system upgrade with pacman -Syu',
+  'updates.subtitleHeldBack': 'System upgrade with pacman -Syu, without the packages held back by the pacman configuration',
   'updates.check': 'Check now',
   'updates.checking': 'Checking …',
   'updates.checkingHint':
@@ -477,6 +478,8 @@ export const en: Record<MessageKey, Message> = {
   'updates.list.title': { one: '{count} update', other: '{count} updates' },
   'updates.list.explanation':
     'The list explains what a complete system upgrade changes. Individual updates cannot be selected: Arch-based systems are always upgraded completely to avoid partial upgrades.',
+  'updates.list.explanationHeldBack':
+    'The list explains what the system upgrade changes. Individual updates cannot be selected. Because the pacman configuration holds packages back, this online upgrade is not complete (see below).',
   'updates.list.totalDownload': 'Total download: {size}',
   'updates.list.outdated': 'outdated',
   'updates.heldBack.title': { one: '{count} package held back', other: '{count} packages held back' },
@@ -498,10 +501,13 @@ export const en: Record<MessageKey, Message> = {
   'precheck.lock': 'Package management',
   'precheck.lock.free': 'No lock (db.lck) active',
   'precheck.lock.locked': 'Locked – another package manager is running',
-  'precheck.mirror': 'Mirror and signatures',
-  'precheck.mirror.ok': 'Last synchronization without errors. pacman verifies package signatures while downloading.',
+  'precheck.mirror': 'Mirror',
+  'precheck.mirror.ok': 'Last synchronization without errors.',
   'precheck.mirror.error': 'Error during the last check: {error}',
   'precheck.mirror.unknown': 'unknown',
+  'precheck.signatures': 'Package signatures',
+  'precheck.signatures.pending':
+    'Not checkable yet: pacman verifies the signatures while downloading and stops before the installation on an error.',
   'precheck.news': 'Arch/CachyOS news',
   'precheck.news.none': 'No unread announcements (as of {time})',
   'precheck.news.unread': { one: '{count} unread announcement', other: '{count} unread announcements' },
