@@ -215,12 +215,14 @@ export const de = {
   'operation.result.succeeded': 'Vorgang erfolgreich abgeschlossen',
   'operation.result.failedBeforeCommit': 'Fehlgeschlagen – Paketlage unverändert',
   'operation.result.failedBeforeCommitText':
-    'Der Vorgang wurde beendet, bevor pacman etwas installiert hat. Am System wurde nichts geändert.',
+    'Der Vorgang wurde beendet, bevor pacman Pakete installiert oder entfernt hat. Die installierten Pakete sind unverändert.',
+  'operation.result.syncedHint':
+    'Die Paketdatenbanken wurden dabei möglicherweise schon synchronisiert (pacman -Sy). Installiere einzelne Pakete deshalb nur zusammen mit einem vollständigen Upgrade, wie cachyos-center es tut, und nicht mit „pacman -S“ allein: Das wäre eine Teilaktualisierung.',
   'operation.result.unclear': 'Paketlage unklar – bitte prüfen',
   'operation.result.unclearText':
     'Die Installation hatte bereits begonnen. Prüfe den Zustand des Systems, bevor du weitere Paketaktionen startest.',
   'operation.result.cancelled': 'Abgebrochen – Paketlage unverändert',
-  'operation.result.cancelledText': 'Der Vorgang wurde vor der Installation abgebrochen. Am System wurde nichts geändert.',
+  'operation.result.cancelledText': 'Der Vorgang wurde vor der Installation abgebrochen. Die installierten Pakete sind unverändert.',
   'operation.result.outcomeUnknown': 'Ergebnis unbekannt',
   'operation.result.outcomeUnknownText':
     'Das Ergebnis konnte nicht sicher festgestellt werden, zum Beispiel nach einem Absturz. Prüfe den Zustand des Systems.',
@@ -414,6 +416,7 @@ export const de = {
   'dashboard.lastUpdateUnknown': 'Letztes Update: unbekannt',
   'dashboard.lastUpgradeAttempt': 'Letzter Upgrade-Versuch: {date}, {result}',
   'dashboard.nextCheck': 'Nächste automatische Prüfung: {date}',
+  'dashboard.nextCheckSoon': 'Nächste automatische Prüfung: in Kürze',
   'dashboard.nextCheckOff': 'Automatische Prüfung ausgeschaltet',
   'dashboard.nextCheckUnknown': 'Nächste automatische Prüfung: unbekannt',
   'dashboard.offlinePrepared': 'Updates werden beim nächsten Neustart installiert',

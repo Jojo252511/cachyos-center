@@ -16,4 +16,11 @@ Alle nennenswerten Änderungen dieses Projekts. Format angelehnt an
 - Automatische Updates „Nur benachrichtigen“; „Automatisch beim nächsten Neustart installieren“
   über CachyOS `pacman-offline` (in Entwicklung, gesperrt).
 - Lokaler, rein lesender MCP-Server (stdio, standardmäßig deaktiviert).
-- Arch-Paketierung (PKGBUILD, Polkit-Policy, D-Bus-Aktivierung, systemd-Units), CI.
+- Arch-Paketierung (PKGBUILD, Polkit-Policy, D-Bus-Aktivierung, systemd-Units), CI mit
+  Secret-Scan der gesamten Git-Historie (gitleaks).
+- Statusseite mit Meilensteinen, Abweichungen und nächsten Schritten (`docs/status.md`).
+
+### Sicherheit
+- Jede schreibende Helper-Methode prüft den Bus-Absender per Polkit, auch das Abbrechen (eigene
+  Aktion `org.cachyos-center.packages.cancel`); der Polkit-Codepfad ist gegen eine
+  Test-Authority getestet.

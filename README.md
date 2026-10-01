@@ -72,7 +72,7 @@ crates/service/       Application Core für GUI und MCP
 crates/helper/        privilegierter D-Bus-Helper
 crates/mcp/           lokaler MCP-Server (stdio)
 packaging/arch/       PKGBUILD, Polkit, D-Bus, systemd
-docs/                 Architektur, Bedienung, Sicherheitsmodell, Tests
+docs/                 Architektur, Bedienung, Sicherheitsmodell, Status, Tests
 tests/                Übersicht und VM-Prüfprotokoll
 ```
 
@@ -85,6 +85,13 @@ tests/                Übersicht und VM-Prüfprotokoll
 - **Entfernen lokaler/AUR-Pakete:** in V1 bewusst nicht über die App.
 - **System-Tray und KI-Erklärung in der App:** nicht in V1 (Tray optional laut Konzept).
 - **Paketsignatur:** Release-Artefakte werden noch nicht signiert, nur mit SHA-256 veröffentlicht.
+- **MCP-Fehlercode `INVALID_INPUT`:** zusätzlich zu den fünf Codes des Konzepts, damit ein Host
+  Eingabefehler erkennt ([docs/mcp.md](docs/mcp.md)).
+- **Abbrechen per Polkit:** eigene Aktion `org.cachyos-center.packages.cancel` ohne Passwort für
+  aktive lokale Sitzungen, weil ein Abbruch vor dem Commit nichts am System ändert.
+
+Stand nach Meilensteinen, Abweichungen, Einschränkungen und nächste Schritte:
+[docs/status.md](docs/status.md).
 
 ## Lizenz
 

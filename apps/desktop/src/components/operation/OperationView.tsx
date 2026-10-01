@@ -133,6 +133,8 @@ function ResultSummary(props: OperationViewProps & { operation: Operation }) {
   const { t } = useI18n();
   const { operation, confirmedPlan, onReviewPlan, onRecheck, recheckBusy, onViewLog, rebootRecommended, resultPending } = props;
   const blocks: ReactNode[] = [];
+  // Upgrades and installs start with pacman -Sy; removals never synchronize.
+  const mayHaveSynced = !operation.commitStarted && (operation.kind === 'systemUpgrade' || operation.kind === 'install');
 
   if (isPlanChanged(operation)) {
     const diff = confirmedPlan ? diffPlans(confirmedPlan, operation.actualPlan) : null;
@@ -168,6 +170,7 @@ function ResultSummary(props: OperationViewProps & { operation: Operation }) {
     blocks.push(
       <Notice key="cancelled" tone="info" title={t('operation.result.cancelled')}>
         <p>{t('operation.result.cancelledText')}</p>
+        {mayHaveSynced ? <p>{t('operation.result.syncedHint')}</p> : null}
       </Notice>,
     );
   } else {
@@ -179,6 +182,7 @@ function ResultSummary(props: OperationViewProps & { operation: Operation }) {
         title={unclear ? t('operation.result.unclear') : operation.state === 'cancelledBeforeCommit' ? t('operation.result.cancelled') : t('operation.result.failedBeforeCommit')}
       >
         <p>{unclear ? t('operation.result.unclearText') : t('operation.result.failedBeforeCommitText')}</p>
+        {!unclear && mayHaveSynced ? <p>{t('operation.result.syncedHint')}</p> : null}
         {unclear && operation.changes.packages.length > 0 ? <ChangeSummary operation={operation} /> : null}
       </Notice>,
     );

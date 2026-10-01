@@ -334,9 +334,25 @@ const installedDefs = (state: MockState) => state.packages.filter((p) => p.insta
 const onlineUpdates = (state: MockState) => state.updateDefs.filter((d) => !state.heldBack.includes(d.name));
 const backendReady = (state: MockState) => state.appInfo.backend.state === 'ready';
 
+/** A package operation that failed after its commit began, after the last check (backend rule). */
+function failedCommitAfterCheck(state: MockState): boolean {
+  const last = lastOperation(state)?.op;
+  const checkedAt = state.check.checkedAt;
+  return (
+    !!last &&
+    checkedAt !== null &&
+    last.kind !== 'updateCheck' &&
+    last.commitStarted &&
+    (last.state === 'failed' || last.state === 'needsAttention') &&
+    (last.endedAt ?? 0) >= checkedAt
+  );
+}
+
 function checkStatus(state: MockState): CheckStatus {
   const { status, checkedAt } = state.check;
   if (status === 'fresh' && checkedAt !== null && nowSec() - checkedAt > STALE_AFTER) return 'stale';
+  // Like the backend: a failed commit after the check never leaves "System aktuell".
+  if (status === 'fresh' && failedCommitAfterCheck(state)) return 'stale';
   return status;
 }
 

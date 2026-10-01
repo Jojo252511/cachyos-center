@@ -326,12 +326,16 @@ export function DashboardPage() {
     primary = checkButton('secondary');
   }
 
+  // Due or overdue checks run within about a minute (background loop of the app).
+  const nextCheckSoon = dashboard.nextCheckAt !== null && dashboard.nextCheckAt * 1000 <= now + 90_000;
   const nextCheck =
     settings.checkIntervalHours === 0
       ? t('dashboard.nextCheckOff')
-      : dashboard.nextCheckAt !== null
-        ? t('dashboard.nextCheck', { date: i18n.fmt.dateTime(dashboard.nextCheckAt) })
-        : t('dashboard.nextCheckUnknown');
+      : dashboard.nextCheckAt === null
+        ? t('dashboard.nextCheckUnknown')
+        : nextCheckSoon
+          ? t('dashboard.nextCheckSoon')
+          : t('dashboard.nextCheck', { date: i18n.fmt.dateTime(dashboard.nextCheckAt) });
 
   const last = dashboard.lastActivity;
   const lastOutcome = last ? activityOutcome(last, i18n) : null;

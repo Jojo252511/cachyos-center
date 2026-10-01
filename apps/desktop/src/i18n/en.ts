@@ -210,12 +210,14 @@ export const en: Record<MessageKey, Message> = {
   'operation.result.succeeded': 'Operation completed successfully',
   'operation.result.failedBeforeCommit': 'Failed – package state unchanged',
   'operation.result.failedBeforeCommitText':
-    'The operation ended before pacman installed anything. Nothing was changed on the system.',
+    'The operation ended before pacman installed or removed packages. The installed packages are unchanged.',
+  'operation.result.syncedHint':
+    'The package databases may already have been synchronized (pacman -Sy). Therefore install single packages only together with a complete upgrade, as cachyos-center does, and not with “pacman -S” alone: that would be a partial upgrade.',
   'operation.result.unclear': 'Package state unclear – please check',
   'operation.result.unclearText':
     'The installation had already started. Check the state of the system before starting further package actions.',
   'operation.result.cancelled': 'Cancelled – package state unchanged',
-  'operation.result.cancelledText': 'The operation was cancelled before the installation. Nothing was changed on the system.',
+  'operation.result.cancelledText': 'The operation was cancelled before the installation. The installed packages are unchanged.',
   'operation.result.outcomeUnknown': 'Outcome unknown',
   'operation.result.outcomeUnknownText':
     'The outcome could not be determined with certainty, for example after a crash. Check the state of the system.',
@@ -401,6 +403,7 @@ export const en: Record<MessageKey, Message> = {
   'dashboard.lastUpdateUnknown': 'Last update: unknown',
   'dashboard.lastUpgradeAttempt': 'Last upgrade attempt: {date}, {result}',
   'dashboard.nextCheck': 'Next automatic check: {date}',
+  'dashboard.nextCheckSoon': 'Next automatic check: shortly',
   'dashboard.nextCheckOff': 'Automatic check switched off',
   'dashboard.nextCheckUnknown': 'Next automatic check: unknown',
   'dashboard.offlinePrepared': 'Updates will be installed on the next reboot',

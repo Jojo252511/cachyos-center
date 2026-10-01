@@ -21,7 +21,8 @@ export const GIB = 1024 * MIB;
 const HOUR = 3600;
 const DAY = 24 * HOUR;
 
-export const APP_ID = 'org.cachyos-center.CachyOSCenter';
+/** Same as `cachyos_center_core::APP_ID` (window class and desktop file name). */
+export const APP_ID = 'cachyos-center';
 
 export const REPOSITORIES: RepositoryInfo[] = [
   { name: 'cachyos-v3', packageCount: 222 },

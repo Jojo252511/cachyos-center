@@ -100,6 +100,14 @@ describe('OperationView', () => {
     expect(screen.getByText('Fehlgeschlagen – Paketlage unverändert')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Log ansehen' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Erneut prüfen' })).toBeInTheDocument();
+    // The databases may already be synchronized: warn against pacman -S alone.
+    expect(screen.getByText(/nicht mit „pacman -S“ allein: Das wäre eine Teilaktualisierung/)).toBeInTheDocument();
+  });
+
+  it('gives no partial-upgrade hint for removals, which never synchronize', () => {
+    renderView(operation({ kind: 'remove', state: 'cancelledBeforeCommit', endedAt: 1_790_000_100 }));
+    expect(screen.getByText('Abgebrochen – Paketlage unverändert')).toBeInTheDocument();
+    expect(screen.queryByText(/Teilaktualisierung/)).toBeNull();
   });
 
   it('reports an unclear package state after the commit with a terminal repair hint', () => {

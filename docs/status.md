@@ -1,0 +1,51 @@
+# Umsetzungsstand
+
+Stand: 2026-10-01, Version 0.1.0 (Vorabversion, kein Release-Tag). Maßstab sind das Konzept und
+der Implementierungsauftrag des Projekts; Nachweise stehen im [Testprotokoll](testprotokoll.md).
+
+## Meilensteine
+
+| Meilenstein | Umfang | Abnahmekriterium laut Konzept | Status | Nachweis |
+|---|---|---|---|---|
+| M0 – Spike | Tauri-Fenster auf CachyOS/Hyprland, libalpm-ABI-Prüfung, Polkit- und Timer-Prototyp | Start, Rendering, Paketabfrage und Polkit-Dialog real getestet | **teilweise:** Start, Rendering und Paketabfrage unter Hyprland real geprüft; Polkit-Codepfad gegen eine Test-Authority geprüft; der echte Polkit-Dialog braucht eine Root-Installation (VM) | [Bestandsaufnahme](bestandsaufnahme.md), Testprotokoll „Manuelle Prüfungen“, Sandbox-Tests `polkit_*` |
+| M1 – Lesemodus | Dashboard, Systeminfo, installierte Pakete, Repository-Suche, Updateprüfung | keine Root-Rechte nötig; Offline-/Fehlerzustände sichtbar | **erfüllt** | GUI aus dem Paket mit realen Daten (X11, Hyprland), Offline-Prüfung im Netzwerk-Namespace, UI-Tests der Zustände |
+| M2 – manuelle Aktionen | Installieren, Entfernen, vollständiges Update mit Helper und Verlauf | echte Testtransaktionen, Lock-/Signatur-/Abbruchfälle bestanden | **erfüllt in der Sandbox:** echte pacman-Transaktionen inklusive Lock, Signaturfehler, Abbruch, Planabweichung und Wiederherstellung; als Systemdienst mit Polkit-Dialog nur auf einer VM prüfbar | `crates/helper/tests/sandbox.rs` (12 Tests), `recovery.rs`, CI |
+| M3 – Auto-Update | Policy, systemd-Preflight, `pacman-offline`-Integration, Stop-Regeln, Benachrichtigungen | Vorbereitung ohne GUI; Installation beim nächsten manuellen Neustart; Blockaden erkannt | **teilweise:** „Nur benachrichtigen“ fertig; Automatikmodus implementiert, aber gesperrt und als „in Entwicklung“ gekennzeichnet, bis der `pacman-offline`-Pfad auf einer VM verifiziert ist | `preflight.rs`, [Automatische Updates](automatische-updates.md) |
+| M4 – MCP | read-only stdio-Server und Host-Beispiel | Tools liefern Daten, keine Schreiboperation erreichbar | **erfüllt** | `crates/mcp/tests/host.rs`, [MCP](mcp.md) |
+| M5 – Release | Paketierung, Doku, i18n, Barrierefreiheit, CI, Testmatrix | Installation/Deinstallation, Upgrade und Start auf frischem CachyOS geprüft | **offen:** Paketbau, Doku, Deutsch/Englisch, Tastatur- und Screenreader-Bedienung und CI fertig; die VM-Testmatrix (frische Installation, Upgrade, Deinstallation) fehlt | Testprotokoll „VM-Testmatrix“ |
+
+## Bewusste Abweichungen vom Konzept
+
+| Punkt | Entscheidung | Begründung |
+|---|---|---|
+| MCP-Fehlercodes | Zusätzlich zu `UNAVAILABLE`, `BUSY`, `STALE`, `UNSUPPORTED`, `INTERNAL` meldet der Server ungültige Argumente als `INVALID_INPUT` | Ein KI-Host soll Eingabefehler von Systemfehlern unterscheiden können; Fehler des Lesedienstes werden weiterhin auf die fünf Codes abgebildet ([MCP](mcp.md)) |
+| Polkit für `CancelOperation` | Eigene Aktion `org.cachyos-center.packages.cancel`, für aktive lokale Sitzungen ohne Passwort; Abbrechen fremder Vorgänge braucht die Berechtigung des Vorgangs | Ein Abbruch vor dem Commit ändert das System nie; eine Passwortabfrage zum Abbrechen wäre hinderlich ([Sicherheitsmodell](sicherheitsmodell.md)) |
+| Upgrade nur nach frischer Prüfung | „Installieren“ ist erst nach einer höchstens sechs Stunden alten, erfolgreichen Prüfung aktiv | vorsichtigste Auslegung von „nie ohne frische Prüfung“ |
+| Paketdateien in den Details | nicht umgesetzt (im Konzept optional) | – |
+| System-Tray | nicht umgesetzt (im Konzept „nur bei nachgewiesener Umgebung“) | alle Funktionen sind ohne Tray erreichbar |
+
+## Bekannte Einschränkungen
+
+- Polkit-Dialog, Helper als echter Systemdienst, Installation und Deinstallation des Pakets sowie
+  der `pacman-offline`-Pfad sind ohne VM nicht real geprüft.
+- Der Automatikmodus „Automatisch beim nächsten Neustart installieren“ ist gesperrt; freischalten
+  kann ihn nur die Administration über `/etc/cachyos-center/experimental.toml`.
+- „Lokal/AUR“ ist eine Näherung (fremde Pakete); die Herkunft ist nicht sicher bestimmbar. Lokale
+  Pakete werden in V1 weder aktualisiert noch entfernt.
+- Nach einer neuen libalpm-Hauptversion bleiben die Paketfunktionen deaktiviert, bis cachyos-center
+  neu gebaut ist.
+- Release-Artefakte werden nur mit SHA-256 veröffentlicht, nicht signiert.
+- Nach einem Stopp vor dem Commit sind die Paketdatenbanken möglicherweise schon synchronisiert;
+  die Oberfläche warnt dann vor einzelnen `pacman -S`-Installationen.
+
+## Nächste Schritte
+
+1. CachyOS-VM mit Hyprland und Polkit-Agent bereitstellen; das Paket mit
+   `CC_LOCAL_SOURCE=1 makepkg -si` installieren und `bash tests/vm/pruefen.sh` ausführen.
+2. Die Szenarien A1–A10 und F1–F7 aus [tests/vm/README.md](../tests/vm/README.md) durchspielen und
+   im Testprotokoll mit Datum, Paketversion, pacman-Version und Kernel eintragen.
+3. Den `pacman-offline`-Pfad prüfen (Kernel-Update, Signaturfehler, abgebrochener Neustart,
+   Kombination mit `offline.conf`); erst danach den Automatikmodus freigeben.
+4. Bei bestandener Matrix `v0.1.0` taggen, ein Release mit SHA-256 anlegen und die Signatur der
+   Artefakte einrichten.
+5. Namens- und Markenprüfung zu „CachyOS“ vor einer breiteren Veröffentlichung.
