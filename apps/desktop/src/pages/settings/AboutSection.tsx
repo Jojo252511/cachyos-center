@@ -34,9 +34,14 @@ export function AboutSection() {
           {appInfo.helperError ? <span className="muted block">{appInfo.helperError}</span> : null}
         </KeyValue>
         <KeyValue label={t('settings.about.backend')}>
-          {appInfo.backend.state === 'ready'
-            ? t('system.pacman.backendReady', { version: appInfo.backend.libalpmVersion, builtAgainst: appInfo.backend.builtAgainst })
-            : t('system.pacman.backendUnavailable', { reason: appInfo.backend.reason })}
+          {appInfo.backend.state === 'ready' ? (
+            t('system.pacman.backendReady', { version: appInfo.backend.libalpmVersion, builtAgainst: appInfo.backend.builtAgainst })
+          ) : (
+            <>
+              {t('system.pacman.backendUnavailable')}
+              <span className="block">{t(`backend.problem.${appInfo.backend.problem}`)}</span>
+            </>
+          )}
         </KeyValue>
       </KeyValueList>
       <p>

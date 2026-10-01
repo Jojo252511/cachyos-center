@@ -24,7 +24,7 @@ fn service(dir: &Path) -> Option<PackageService> {
     let svc = PackageService::new(dir.join("checkup-db"), dir.join("state.json"));
     match svc.backend_status() {
         BackendStatus::Ready { .. } => Some(svc),
-        BackendStatus::Unavailable { reason } => {
+        BackendStatus::Unavailable { reason, .. } => {
             if std::env::var("CC_REQUIRE_BRIDGE").as_deref() == Ok("1") {
                 panic!("bridge required but unavailable: {reason}");
             }

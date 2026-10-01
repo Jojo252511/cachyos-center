@@ -122,6 +122,12 @@ export const en: Record<MessageKey, Message> = {
   'state.helperMissingText':
     'Package changes run exclusively through the privileged helper service cachyos-center-helper. It is not installed or not reachable. All reading functions remain available.',
   'state.unsupportedTitle': 'Package functions not available',
+  'backend.problem.incompatible':
+    'The installed libalpm does not match this build of cachyos-center, for example after a pacman update. Package functions stay disabled until cachyos-center is rebuilt for the new version.',
+  'backend.problem.bridgeMissing':
+    'The libalpm bridge (libcachyos_center_alpm.so) was not found. The installation is incomplete; reinstall cachyos-center.',
+  'backend.problem.failed': 'The libalpm bridge could not be loaded.',
+  'backend.technicalReason': 'Technical reason: {reason}',
   'state.unsupportedText':
     'The libalpm bridge is not available or not compatible. Package lists and package actions are disabled; system information remains available.',
   'state.notArchTitle': 'Unsupported system',
@@ -478,7 +484,7 @@ export const en: Record<MessageKey, Message> = {
   'precheck.title': 'Before the upgrade',
   'precheck.intro': 'Items that cannot be checked reliably are shown as “unknown”, never as passed.',
   'precheck.network': 'Network',
-  'precheck.network.ok': 'Package sources reachable at the last check {time}',
+  'precheck.network.ok': 'Package sources reachable (last check: {time})',
   'precheck.network.offline': 'No connection at the last check',
   'precheck.network.unknown': 'unknown – no current successful check',
   'precheck.disk': 'Free disk space',
@@ -638,7 +644,7 @@ export const en: Record<MessageKey, Message> = {
   'system.pacman.version': 'pacman',
   'system.pacman.backend': 'libalpm bridge',
   'system.pacman.backendReady': 'ready (libalpm {version}, built against {builtAgainst})',
-  'system.pacman.backendUnavailable': 'not available: {reason}',
+  'system.pacman.backendUnavailable': 'not available',
   'system.pacman.lock': 'Lock (db.lck)',
   'system.pacman.lockFree': 'free',
   'system.pacman.lockLocked': 'locked',
@@ -786,7 +792,10 @@ export const en: Record<MessageKey, Message> = {
   'activity.started': 'Start',
   'activity.ended': 'End',
   'activity.running': 'still running',
-  'activity.counts': '{installed} installed, {upgraded} upgraded, {removed} removed, {downgraded} downgraded',
+  'activity.count.installed': '{count} installed',
+  'activity.count.upgraded': '{count} upgraded',
+  'activity.count.removed': '{count} removed',
+  'activity.count.downgraded': '{count} downgraded',
   'activity.packages': { one: '{count} affected package', other: '{count} affected packages' },
   'activity.error': 'Error: {error}',
   'activity.limit': 'The last {count} entries are shown.',

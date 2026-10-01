@@ -43,13 +43,17 @@ function ActivityItem({ entry }: { entry: HistoryEntry }) {
           <div>
             <dt>{t('operation.changes.title')}</dt>
             <dd>
-              <span aria-hidden="true" className="mono">
-                +{entry.installed} ~{entry.upgraded} −{entry.removed}
-                {entry.downgraded > 0 ? ` ↓${entry.downgraded}` : ''}
-              </span>
-              <span className="sr-only">
-                {t('activity.counts', { installed: entry.installed, upgraded: entry.upgraded, removed: entry.removed, downgraded: entry.downgraded })}
-              </span>
+              {(
+                [
+                  ['installed', entry.installed],
+                  ['upgraded', entry.upgraded],
+                  ['removed', entry.removed],
+                  ['downgraded', entry.downgraded],
+                ] as const
+              )
+                .filter(([, count]) => count > 0)
+                .map(([kind, count]) => t(`activity.count.${kind}`, { count }))
+                .join(', ')}
             </dd>
           </div>
         ) : null}

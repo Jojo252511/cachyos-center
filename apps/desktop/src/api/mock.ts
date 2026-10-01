@@ -232,7 +232,11 @@ export function createState(scenario: ScenarioId): MockState {
       state.lock = { state: 'locked', since: now - 95, holderRunning: true };
       break;
     case 'unsupported':
-      state.appInfo.backend = { state: 'unavailable', reason: 'libalpm 17.0.0 is not supported by this build (built against 16.0.1)' };
+      state.appInfo.backend = {
+        state: 'unavailable',
+        problem: 'incompatible',
+        reason: 'package functions are disabled: the installed libalpm is not compatible with this build of cachyos-center (/usr/lib/cachyos-center/libcachyos_center_alpm.so: dlopen failed: libalpm.so.17: cannot open shared object file: No such file or directory)',
+      };
       state.system.pacman.backend = state.appInfo.backend;
       state.checkBehavior = 'unsupported';
       state.check = { status: 'unsupported', checkedAt: null, attemptedAt: null, error: null };

@@ -134,8 +134,25 @@ pub enum BackendStatus {
         libalpm_version: String,
         built_against: String,
     },
-    /// Package functions are disabled; `reason` explains why (e.g. ABI mismatch).
-    Unavailable { reason: String },
+    /// Package functions are disabled; `problem` says why (the UI renders a
+    /// localized text), `reason` is the technical detail (English).
+    Unavailable {
+        problem: BackendProblem,
+        reason: String,
+    },
+}
+
+/// Why the package backend (libalpm bridge) is unavailable.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum BackendProblem {
+    /// The installed libalpm does not match this build (e.g. a new soname after a pacman update).
+    Incompatible,
+    /// The bridge library is not installed (incomplete installation).
+    BridgeMissing,
+    /// Loading or calling the bridge failed for another reason.
+    Failed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]

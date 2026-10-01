@@ -42,6 +42,14 @@ describe('package action guards', () => {
     expect(install).toBeDisabled();
   });
 
+  it('explains an incompatible libalpm and blocks package changes', async () => {
+    mockBackend('unsupported');
+    renderApp(<UpdatesPage />);
+    expect(await screen.findByText(/Die installierte libalpm passt nicht zu diesem Build/)).toBeInTheDocument();
+    expect(screen.getByText(/Technischer Grund: .*libalpm\.so\.17/)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Installieren' })).toBeDisabled();
+  });
+
   it('blocks package changes without the helper service', async () => {
     mockBackend('helperMissing');
     renderApp(<UpdatesPage />);

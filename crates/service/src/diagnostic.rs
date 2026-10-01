@@ -122,7 +122,7 @@ pub fn build(input: &ReportInputs<'_>, ctx: &SanitizeContext) -> String {
                 "libalpm: {libalpm_version} (bridge built against {built_against})"
             );
         }
-        BackendStatus::Unavailable { reason } => {
+        BackendStatus::Unavailable { reason, .. } => {
             let _ = writeln!(r, "libalpm bridge: unavailable ({reason})");
         }
     }

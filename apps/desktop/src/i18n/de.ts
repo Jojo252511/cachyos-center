@@ -127,6 +127,12 @@ export const de = {
   'state.helperMissingText':
     'Paketänderungen laufen ausschließlich über den privilegierten Hilfsdienst cachyos-center-helper. Er ist nicht installiert oder nicht erreichbar. Alle lesenden Funktionen bleiben verfügbar.',
   'state.unsupportedTitle': 'Paketfunktionen nicht verfügbar',
+  'backend.problem.incompatible':
+    'Die installierte libalpm passt nicht zu diesem Build von cachyos-center, zum Beispiel nach einem pacman-Update. Paketfunktionen bleiben deaktiviert, bis cachyos-center für die neue Version neu gebaut ist.',
+  'backend.problem.bridgeMissing':
+    'Die libalpm-Anbindung (libcachyos_center_alpm.so) wurde nicht gefunden. Die Installation ist unvollständig; installiere cachyos-center neu.',
+  'backend.problem.failed': 'Die libalpm-Anbindung konnte nicht geladen werden.',
+  'backend.technicalReason': 'Technischer Grund: {reason}',
   'state.unsupportedText':
     'Die libalpm-Anbindung ist nicht verfügbar oder nicht kompatibel. Paketlisten und Paketaktionen sind deaktiviert; Systeminformationen bleiben verfügbar.',
   'state.notArchTitle': 'Nicht unterstütztes System',
@@ -492,7 +498,7 @@ export const de = {
   'precheck.title': 'Vor dem Upgrade',
   'precheck.intro': 'Nicht sicher prüfbare Punkte werden als „unbekannt“ angezeigt, nicht als bestanden.',
   'precheck.network': 'Netzwerk',
-  'precheck.network.ok': 'Paketquellen bei der letzten Prüfung {time} erreichbar',
+  'precheck.network.ok': 'Paketquellen erreichbar (letzte Prüfung: {time})',
   'precheck.network.offline': 'Keine Verbindung bei der letzten Prüfung',
   'precheck.network.unknown': 'unbekannt – keine aktuelle erfolgreiche Prüfung',
   'precheck.disk': 'Freier Speicherplatz',
@@ -652,7 +658,7 @@ export const de = {
   'system.pacman.version': 'pacman',
   'system.pacman.backend': 'libalpm-Anbindung',
   'system.pacman.backendReady': 'bereit (libalpm {version}, gebaut gegen {builtAgainst})',
-  'system.pacman.backendUnavailable': 'nicht verfügbar: {reason}',
+  'system.pacman.backendUnavailable': 'nicht verfügbar',
   'system.pacman.lock': 'Sperre (db.lck)',
   'system.pacman.lockFree': 'frei',
   'system.pacman.lockLocked': 'gesperrt',
@@ -803,8 +809,10 @@ export const de = {
   'activity.started': 'Beginn',
   'activity.ended': 'Ende',
   'activity.running': 'läuft noch',
-  'activity.counts':
-    '{installed} installiert, {upgraded} aktualisiert, {removed} entfernt, {downgraded} herabgestuft',
+  'activity.count.installed': '{count} installiert',
+  'activity.count.upgraded': '{count} aktualisiert',
+  'activity.count.removed': '{count} entfernt',
+  'activity.count.downgraded': '{count} herabgestuft',
   'activity.packages': { one: '{count} betroffenes Paket', other: '{count} betroffene Pakete' },
   'activity.error': 'Fehler: {error}',
   'activity.limit': 'Es werden die letzten {count} Einträge angezeigt.',

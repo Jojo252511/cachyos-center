@@ -16,7 +16,7 @@ use std::sync::OnceLock;
 
 use cachyos_center_core::bridge::{BRIDGE_PROTOCOL, BridgeInfo, BridgeRequest, BridgeResponse};
 use cachyos_center_core::paths::{ALPM_BRIDGE_FILE, LIBEXEC_DIR};
-use cachyos_center_core::system::BackendStatus;
+use cachyos_center_core::system::{BackendProblem, BackendStatus};
 use cachyos_center_core::{AppError, AppResult, ErrorCode};
 use serde::de::DeserializeOwned;
 
@@ -40,7 +40,14 @@ struct Loaded {
 unsafe impl Send for Loaded {}
 unsafe impl Sync for Loaded {}
 
-static BRIDGE: OnceLock<Result<Loaded, String>> = OnceLock::new();
+static BRIDGE: OnceLock<Result<Loaded, LoadError>> = OnceLock::new();
+
+/// Why the bridge could not be loaded.
+#[derive(Debug, Clone)]
+struct LoadError {
+    problem: BackendProblem,
+    reason: String,
+}
 
 fn is_root() -> bool {
     // SAFETY: geteuid has no preconditions.
@@ -113,7 +120,7 @@ fn load_from(path: &Path) -> Result<Loaded, String> {
     })
 }
 
-fn load() -> Result<Loaded, String> {
+fn load() -> Result<Loaded, LoadError> {
     let mut errors = Vec::new();
     for candidate in candidates() {
         if !candidate.exists() {
@@ -125,28 +132,39 @@ fn load() -> Result<Loaded, String> {
         }
     }
     if errors.is_empty() {
-        Err(format!(
-            "{ALPM_BRIDGE_FILE} was not found (searched next to the executable and in {LIBEXEC_DIR})"
-        ))
-    } else {
-        Err(errors.join("; "))
+        return Err(LoadError {
+            problem: BackendProblem::BridgeMissing,
+            reason: format!(
+                "{ALPM_BRIDGE_FILE} was not found (searched next to the executable and in {LIBEXEC_DIR})"
+            ),
+        });
     }
+    let reason = errors.join("; ");
+    // dlopen names the missing soname, e.g. "libalpm.so.17: cannot open shared object file".
+    let problem = if reason.contains("libalpm.so") {
+        BackendProblem::Incompatible
+    } else {
+        BackendProblem::Failed
+    };
+    Err(LoadError { problem, reason })
 }
 
 fn loaded() -> Result<&'static Loaded, AppError> {
     BRIDGE
         .get_or_init(load)
         .as_ref()
-        .map_err(|reason| AppError::new(ErrorCode::Unsupported, unavailable_text(reason)))
+        .map_err(|e| AppError::new(ErrorCode::Unsupported, unavailable_text(e)))
 }
 
-fn unavailable_text(reason: &str) -> String {
-    if reason.contains("libalpm.so") {
-        format!(
+fn unavailable_text(e: &LoadError) -> String {
+    let reason = &e.reason;
+    match e.problem {
+        BackendProblem::Incompatible => format!(
             "package functions are disabled: the installed libalpm is not compatible with this build of cachyos-center ({reason})"
-        )
-    } else {
-        format!("package functions are disabled: the libalpm bridge could not be loaded ({reason})")
+        ),
+        BackendProblem::BridgeMissing | BackendProblem::Failed => format!(
+            "package functions are disabled: the libalpm bridge could not be loaded ({reason})"
+        ),
     }
 }
 
@@ -194,18 +212,28 @@ pub fn loaded_path() -> Option<PathBuf> {
 
 /// Status for the UI: ready (with versions) or unavailable (with reason).
 pub fn status() -> BackendStatus {
+    if let Err(e) = BRIDGE.get_or_init(load) {
+        return BackendStatus::Unavailable {
+            problem: e.problem,
+            reason: unavailable_text(e),
+        };
+    }
     match call::<BridgeInfo>(&BridgeRequest::Info) {
         Ok(info) if info.compatible => BackendStatus::Ready {
             libalpm_version: info.libalpm_version,
             built_against: info.built_against,
         },
         Ok(info) => BackendStatus::Unavailable {
+            problem: BackendProblem::Incompatible,
             reason: format!(
                 "libalpm {} is not supported by this build (built against {})",
                 info.libalpm_version, info.built_against
             ),
         },
-        Err(e) => BackendStatus::Unavailable { reason: e.message },
+        Err(e) => BackendStatus::Unavailable {
+            problem: BackendProblem::Failed,
+            reason: e.message,
+        },
     }
 }
 
@@ -224,11 +252,16 @@ mod tests {
 
     #[test]
     fn unavailable_texts() {
-        assert!(
-            unavailable_text("libalpm.so.17: cannot open shared object file")
-                .contains("not compatible")
-        );
-        assert!(unavailable_text("not found").contains("could not be loaded"));
+        let incompatible = LoadError {
+            problem: BackendProblem::Incompatible,
+            reason: "libalpm.so.17: cannot open shared object file".into(),
+        };
+        assert!(unavailable_text(&incompatible).contains("not compatible"));
+        let missing = LoadError {
+            problem: BackendProblem::BridgeMissing,
+            reason: "not found".into(),
+        };
+        assert!(unavailable_text(&missing).contains("could not be loaded"));
     }
 
     #[test]

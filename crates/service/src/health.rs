@@ -196,7 +196,7 @@ pub fn build(input: HealthInputs<'_>) -> HealthReport {
             None,
         ));
     }
-    if let BackendStatus::Unavailable { reason } = input.backend {
+    if let BackendStatus::Unavailable { reason, .. } = input.backend {
         items.push(item(
             HealthItemKind::PackageBackendUnavailable,
             Severity::Critical,
@@ -341,6 +341,7 @@ pub fn build(input: HealthInputs<'_>) -> HealthReport {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use cachyos_center_core::system::BackendProblem;
     use cachyos_center_packages::pacman_log::LogTransaction;
 
     fn kernel(missing: bool) -> KernelInfo {
@@ -416,6 +417,7 @@ mod tests {
     fn problems_are_reported_and_sorted() {
         let k = kernel(true);
         let b = BackendStatus::Unavailable {
+            problem: BackendProblem::Incompatible,
             reason: "libalpm.so.17".into(),
         };
         let c = UpdateCheckResult::empty(CheckStatus::Stale);

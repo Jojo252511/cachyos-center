@@ -38,7 +38,8 @@ export function PlatformNotices() {
       {appInfo.backend.state === 'unavailable' ? (
         <Notice tone="danger" title={t('state.unsupportedTitle')}>
           <p>{t('state.unsupportedText')}</p>
-          <p className="muted">{appInfo.backend.reason}</p>
+          <p>{t(`backend.problem.${appInfo.backend.problem}`)}</p>
+          <p className="muted break">{t('backend.technicalReason', { reason: appInfo.backend.reason })}</p>
         </Notice>
       ) : null}
       {!appInfo.helperAvailable ? (

@@ -1023,10 +1023,31 @@
   gap: var(--space-3);
 }
 
+/* Own rendering instead of the GTK theme of WebKitGTK (Tauri on Linux). */
 .progress {
   width: min(24rem, 100%);
   height: 0.6rem;
+  appearance: none;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-3);
+  overflow: hidden;
   accent-color: var(--color-accent);
+}
+
+.progress::-webkit-progress-bar {
+  background: var(--color-surface-3);
+  border-radius: var(--radius-full);
+}
+
+.progress::-webkit-progress-value {
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
+}
+
+.progress::-moz-progress-bar {
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
 }
 
 .operation-result {
@@ -1777,6 +1798,42 @@
 .meter {
   width: 100%;
   height: 0.6rem;
+  appearance: none;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-3);
+  overflow: hidden;
+}
+
+.meter::-webkit-meter-bar {
+  height: 0.6rem;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-3);
+}
+
+.meter::-webkit-meter-optimum-value {
+  background: var(--color-accent);
+}
+
+.meter::-webkit-meter-suboptimum-value {
+  background: var(--color-warning);
+}
+
+.meter::-webkit-meter-even-less-good-value {
+  background: var(--color-danger);
+}
+
+.meter::-moz-meter-bar {
+  background: var(--color-accent);
+}
+
+.meter:-moz-meter-sub-optimum::-moz-meter-bar {
+  background: var(--color-warning);
+}
+
+.meter:-moz-meter-sub-sub-optimum::-moz-meter-bar {
+  background: var(--color-danger);
 }
 
 .monitor-list__item,

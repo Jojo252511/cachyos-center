@@ -142,9 +142,15 @@ export function SystemPage() {
               <KeyValueList>
                 <KeyValue label={t('system.pacman.version')}>{info.pacman.pacmanVersion ?? t('common.unknown')}</KeyValue>
                 <KeyValue label={t('system.pacman.backend')}>
-                  {info.pacman.backend.state === 'ready'
-                    ? t('system.pacman.backendReady', { version: info.pacman.backend.libalpmVersion, builtAgainst: info.pacman.backend.builtAgainst })
-                    : t('system.pacman.backendUnavailable', { reason: info.pacman.backend.reason })}
+                  {info.pacman.backend.state === 'ready' ? (
+                    t('system.pacman.backendReady', { version: info.pacman.backend.libalpmVersion, builtAgainst: info.pacman.backend.builtAgainst })
+                  ) : (
+                    <>
+                      {t('system.pacman.backendUnavailable')}
+                      <span className="block">{t(`backend.problem.${info.pacman.backend.problem}`)}</span>
+                      <span className="muted block break">{t('backend.technicalReason', { reason: info.pacman.backend.reason })}</span>
+                    </>
+                  )}
                 </KeyValue>
                 <KeyValue label={t('system.pacman.lock')}>
                   {info.pacman.lock.state === 'free' ? (
