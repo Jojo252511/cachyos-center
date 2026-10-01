@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  rust:
+    name: Rust (fmt, clippy, tests incl. pacman sandbox)
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    timeout-minutes: 60
+    steps:
+      - name: Install system packages
+        run: |
+          pacman -Syu --noconfirm --needed git rust nodejs npm pkgconf \
+            webkit2gtk-4.1 libsoup3 gtk3 librsvg sqlite curl \
+            pacman-contrib fakeroot dbus xorg-server-xvfb
+      - uses: actions/checkout@v7
+      - name: Create unprivileged build user
+        run: useradd -m builder
+      - uses: actions/cache@v6
+        with:
+          path: |
+            /home/builder/.cargo/registry
+            /home/builder/.cargo/git
+            target
+          key: rust-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: rust-${{ runner.os }}-
+      - name: Hand the workspace to the build user
+        run: |
+          chown -R builder:builder "$GITHUB_WORKSPACE" /home/builder
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Build frontend (embedded by the Tauri crate)
+        run: runuser -u builder -- env HOME=/home/builder bash -c 'cd apps/desktop && npm ci --no-audit --no-fund && npm run build'
+      - name: cargo fmt
+        run: runuser -u builder -- env HOME=/home/builder cargo fmt --all --check
+      - name: cargo clippy
+        run: runuser -u builder -- env HOME=/home/builder cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: cargo build (incl. libalpm bridge)
+        run: runuser -u builder -- env HOME=/home/builder cargo build --workspace --locked
+      - name: cargo test
+        run: runuser -u builder -- env HOME=/home/builder CC_REQUIRE_BRIDGE=1 CC_REQUIRE_SANDBOX=1 cargo test --workspace --locked
+      - name: TypeScript bindings are up to date
+        run: git diff --exit-code -- apps/desktop/src/bindings
+      - name: GUI smoke test (X11, no Hyprland)
+        run: |
+          rc=0
+          runuser -u builder -- env HOME=/home/builder GDK_BACKEND=x11 \
+            dbus-run-session -- xvfb-run -a timeout 15 target/debug/cachyos-center || rc=$?
+          echo "exit code: $rc (124 = still running after 15 s)"
+          test "$rc" -eq 124
+
+  frontend:
+    name: Frontend (typecheck, lint, tests, build, audit)
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/desktop
+    steps:
+      - name: Install Node.js
+        working-directory: /
+        run: pacman -Syu --noconfirm --needed nodejs npm git
+      - uses: actions/checkout@v7
+      - run: npm ci --no-fund
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - name: npm audit (high and critical)
+        run: npm audit --audit-level=high
+
+  dependencies:
+    name: Dependency audit (cargo-deny)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check advisories licenses bans sources
+
+  packaging:
+    name: Arch package
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    timeout-minutes: 60
+    steps:
+      - name: Install tools
+        run: pacman -Syu --noconfirm --needed git rust nodejs npm pkgconf webkit2gtk-4.1 libsoup3 gtk3 sqlite curl pacman-contrib fakeroot desktop-file-utils libxml2 systemd
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Validate packaging files
+        run: |
+          desktop-file-validate packaging/arch/cachyos-center.desktop
+          xmllint --noout --nonet packaging/arch/org.cachyos-center.policy packaging/arch/org.cachyos_center.Packages1.conf
+          bash -n packaging/arch/PKGBUILD packaging/arch/cachyos-center.install
+      - name: Build package from this commit
+        run: |
+          useradd -m builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          runuser -u builder -- env HOME=/home/builder git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          cd packaging/arch
+          runuser -u builder -- env HOME=/home/builder CC_LOCAL_SOURCE=1 makepkg --noconfirm --nodeps -f
+          bsdtar -tf cachyos-center-*.pkg.tar.zst | sort > ../../package-files.txt
+          sha256sum cachyos-center-*.pkg.tar.zst
+      - uses: actions/upload-artifact@v7
+        with:
+          name: arch-package
+          path: |
+            packaging/arch/*.pkg.tar.zst
+            package-files.txt
+          if-no-files-found: error
