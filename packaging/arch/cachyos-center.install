@@ -21,6 +21,7 @@ pre_remove() {
 post_remove() {
   cat <<'MSG'
 ==> Konfiguration und Verlauf bleiben erhalten und können bei Bedarf gelöscht werden:
-    /etc/cachyos-center  /var/lib/cachyos-center  /var/log/cachyos-center
+    /etc/cachyos-center  /etc/systemd/system/cachyos-center-preflight.timer.d
+    /var/lib/cachyos-center  /var/log/cachyos-center
 MSG
 }

@@ -1,6 +1,6 @@
 # Maintainer: cachyos-center contributors <https://github.com/Jojo252511/cachyos-center>
 #
-# Build from the published tag:   makepkg -si
+# Build a published tag (from v0.1.0 on): makepkg -si
 # Build from this working tree:    CC_LOCAL_SOURCE=1 makepkg -f
 #
 # The package deliberately does not depend on a versioned libalpm soname:

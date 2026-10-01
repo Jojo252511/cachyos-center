@@ -8,7 +8,8 @@ Fehlerfälle aus Abschnitt 8 ab, die sich ohne echtes System mit Polkit-Agent ni
 
 1. Frische CachyOS-VM mit Hyprland (Snapshot der VM anlegen, um zurückkehren zu können).
 2. Polkit-Agent in der Sitzung (z. B. `hyprpolkitagent`).
-3. Paket bauen und installieren: `cd packaging/arch && makepkg -si`.
+3. Paket bauen und installieren: `cd packaging/arch && CC_LOCAL_SOURCE=1 makepkg -si` (baut den
+   ausgecheckten Stand; ein Release-Tag existiert erst nach bestandener Matrix).
 4. Automatische Prüfungen: `bash tests/vm/pruefen.sh` (nur lesend, Ergebnis in `vm-pruefung-<Datum>.log`).
 
 ## Manuelle Szenarien
