@@ -7,6 +7,7 @@ import { dashboardHeadline } from './headline';
 import { isOpenableUrl } from './links';
 import { newsGate, requiresNewsAcknowledgement } from './news';
 import { countByAction, diffPlans, includedUpgrades, isDiffEmpty, planRepositories } from './plan';
+import { resolveTheme } from '../state/AppState';
 
 const result = (patch: Partial<UpdateCheckResult>): UpdateCheckResult => ({
   status: 'fresh',
@@ -95,5 +96,15 @@ describe('external links', () => {
     expect(isOpenableUrl('https://github.com/someone/else')).toBe(false);
     expect(isOpenableUrl('http://archlinux.org/')).toBe(false);
     expect(isOpenableUrl('https://www.mozilla.org/firefox/')).toBe(false);
+  });
+});
+
+describe('theme', () => {
+  it('follows an explicit desktop preference and defaults to dark', () => {
+    expect(resolveTheme('system', 'light')).toBe('light');
+    expect(resolveTheme('system', 'dark')).toBe('dark');
+    expect(resolveTheme('system', 'unknown')).toBe('dark');
+    expect(resolveTheme('light', 'dark')).toBe('light');
+    expect(resolveTheme('dark', 'light')).toBe('dark');
   });
 });

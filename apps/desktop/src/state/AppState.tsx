@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { api, type BackendInfo } from '../api/client';
 import { normalizeError } from '../api/errors';
@@ -30,30 +30,16 @@ export function useAppState(): AppStateValue {
   return value;
 }
 
-type MediaScheme = ResolvedTheme | null;
-
-function readMediaScheme(): MediaScheme {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return null;
-  if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
-  if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
-  return null;
-}
-
-function subscribeMediaScheme(callback: () => void): () => void {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return () => undefined;
-  const query = window.matchMedia('(prefers-color-scheme: light)');
-  query.addEventListener('change', callback);
-  return () => query.removeEventListener('change', callback);
-}
-
 /**
- * `system` follows the desktop color scheme reported by the backend (XDG
- * portal), then `prefers-color-scheme`; dark is the strong default.
+ * `system` follows an explicit desktop color scheme reported by the backend
+ * (XDG portal). Without one, dark is the strong default: WebKitGTK reports
+ * `prefers-color-scheme: light` whenever no preference exists, so the media
+ * query is no reliable signal.
  */
-export function resolveTheme(preference: ThemePreference, systemColorScheme: string, media: MediaScheme): ResolvedTheme {
+export function resolveTheme(preference: ThemePreference, systemColorScheme: string): ResolvedTheme {
   if (preference === 'dark' || preference === 'light') return preference;
   if (systemColorScheme === 'dark' || systemColorScheme === 'light') return systemColorScheme;
-  return media ?? 'dark';
+  return 'dark';
 }
 
 interface Boot {
@@ -69,7 +55,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [bootError, setBootError] = useState<AppError | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const mediaScheme = useSyncExternalStore(subscribeMediaScheme, readMediaScheme, () => null);
 
   useEffect(() => {
     let active = true;
@@ -116,7 +101,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setBoot((previous) => (previous ? { ...previous, appInfo } : previous));
   }, []);
 
-  const theme = resolveTheme(settings?.theme ?? 'system', boot?.appInfo.systemColorScheme ?? 'unknown', mediaScheme);
+  const theme = resolveTheme(settings?.theme ?? 'system', boot?.appInfo.systemColorScheme ?? 'unknown');
   const language = settings ? resolveLanguage(settings.language, boot?.appInfo.systemLanguage ?? null) : initialLanguage();
   const density = settings?.density ?? 'comfortable';
 
