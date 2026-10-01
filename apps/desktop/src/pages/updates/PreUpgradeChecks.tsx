@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 
 import { api } from '../../api/client';
 import type { Dashboard } from '../../bindings/Dashboard';
@@ -12,6 +12,7 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { ExternalLink } from '../../components/ExternalLink';
 import { useI18n } from '../../i18n';
+import { focusSoon } from '../../lib/focus';
 import { latestUnread, type NewsGate } from '../../lib/news';
 import { isOpenableUrl } from '../../lib/links';
 import { useNow } from '../../state/now';
@@ -51,6 +52,7 @@ export function PreUpgradeChecks({ updates, plan, dashboard, health, news, gate 
   const { t, fmt } = i18n;
   const now = useNow();
   const [acknowledging, setAcknowledging] = useState(false);
+  const newsStatusId = useId();
 
   // Network
   const fresh = updates.status === 'fresh' && updates.error === null && updates.checkedAt !== null;
@@ -100,6 +102,8 @@ export function PreUpgradeChecks({ updates, plan, dashboard, health, news, gate 
       news.reload();
     } finally {
       setAcknowledging(false);
+      // The button is gone once no news is unread: keep the focus in the news row.
+      focusSoon(() => document.getElementById(newsStatusId));
     }
   };
 
@@ -140,9 +144,21 @@ export function PreUpgradeChecks({ updates, plan, dashboard, health, news, gate 
           {t('precheck.signatures.pending')}
         </CheckRow>
         <CheckRow label={t('precheck.news')} state={newsState}>
-          {gate.state === 'loading' ? <p>{t('precheck.news.loading')}</p> : null}
-          {gate.state === 'clear' && newsData?.fetchedAt ? <p>{t('precheck.news.none', { time: fmt.relative(newsData.fetchedAt, now) })}</p> : null}
-          {gate.state === 'unread' ? <p>{t('precheck.news.unread', { count: gate.unreadCount })}</p> : null}
+          {gate.state === 'loading' ? (
+            <p id={newsStatusId} tabIndex={-1}>
+              {t('precheck.news.loading')}
+            </p>
+          ) : null}
+          {gate.state === 'clear' && newsData?.fetchedAt ? (
+            <p id={newsStatusId} tabIndex={-1}>
+              {t('precheck.news.none', { time: fmt.relative(newsData.fetchedAt, now) })}
+            </p>
+          ) : null}
+          {gate.state === 'unread' ? (
+            <p id={newsStatusId} tabIndex={-1}>
+              {t('precheck.news.unread', { count: gate.unreadCount })}
+            </p>
+          ) : null}
           {gate.state === 'unavailable' || (gate.state === 'unread' && gate.incomplete) ? (
             <p>{newsData?.disabled ? t('precheck.news.disabled') : t('precheck.news.unavailable')}</p>
           ) : null}

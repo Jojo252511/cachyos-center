@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { normalizeError } from '../../api/errors';
 import type { AppError } from '../../bindings/AppError';
 import type { TransactionPlan } from '../../bindings/TransactionPlan';
+import { focusSoon } from '../../lib/focus';
 import { warningPackages } from '../../lib/plan';
 import { isPlanChanged, useOperations, type TrackedOperation } from '../../state/Operations';
 import { useStatus } from '../../state/Status';
@@ -35,6 +36,8 @@ export function OperationPanel() {
     setCancelError(null);
     try {
       await operations.cancel();
+      // The cancel button disappears with the next state: keep the focus in the panel.
+      focusSoon(() => document.getElementById('operation-panel-title'));
     } catch (error) {
       setCancelError(normalizeError(error));
     } finally {
@@ -51,7 +54,10 @@ export function OperationPanel() {
         onCancel={() => void cancel()}
         cancelBusy={cancelBusy}
         cancelError={cancelError}
-        onDismiss={operations.dismiss}
+        onDismiss={() => {
+          operations.dismiss();
+          focusSoon();
+        }}
         onReviewPlan={() => setReviewOpen(true)}
         onRecheck={() => void status.checkUpdates()}
         recheckBusy={status.checking}

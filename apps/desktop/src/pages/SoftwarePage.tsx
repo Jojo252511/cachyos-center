@@ -1,5 +1,5 @@
 import { Tabs } from 'radix-ui';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import type { PackageRef } from '../bindings/PackageRef';
 import type { PackageSummary } from '../bindings/PackageSummary';
@@ -8,6 +8,7 @@ import { RemoveDialog } from '../components/dialogs/RemoveDialog';
 import { PageHeader } from '../components/PageHeader';
 import { LockNotice, PlatformNotices } from '../components/StatusNotices';
 import { useI18n } from '../i18n';
+import { activeElement, focusSoon } from '../lib/focus';
 import { useAppState } from '../state/AppState';
 import { useStatus } from '../state/Status';
 import { CatalogTab } from './software/CatalogTab';
@@ -26,8 +27,16 @@ export function SoftwarePage() {
   const [removeTarget, setRemoveTarget] = useState<{ name: string; critical: boolean } | null>(null);
   const backendReady = appInfo.backend.state === 'ready';
 
-  const select = (pkg: PackageSummary, fromCatalog: boolean) =>
+  // The row that opened the details gets the focus back when they close.
+  const opener = useRef<HTMLElement | null>(null);
+  const select = (pkg: PackageSummary, fromCatalog: boolean) => {
+    opener.current = activeElement();
     setSelected({ name: pkg.name, repository: fromCatalog || pkg.installedVersion === null ? pkg.repository : null });
+  };
+  const closeDetails = () => {
+    setSelected(null);
+    focusSoon(() => opener.current);
+  };
 
   return (
     <div className="page">
@@ -67,7 +76,7 @@ export function SoftwarePage() {
             <PackageDetails
               key={`${selected.repository ?? ''}/${selected.name}`}
               reference={selected}
-              onClose={() => setSelected(null)}
+              onClose={closeDetails}
               onInstall={(record) => setInstallTarget({ repository: record.id.repository, name: record.id.name })}
               onRemove={(record) => setRemoveTarget({ name: record.id.name, critical: record.critical })}
             />

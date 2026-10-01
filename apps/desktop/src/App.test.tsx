@@ -7,6 +7,7 @@ import type { Operation } from './bindings/Operation';
 import { App } from './App';
 import { OperationPanel } from './components/operation/OperationPanel';
 import { SettingsPage } from './pages/SettingsPage';
+import { SoftwarePage } from './pages/SoftwarePage';
 import { UpdatesPage } from './pages/UpdatesPage';
 import { mockBackend, renderApp } from './test/utils';
 import { render } from '@testing-library/react';
@@ -124,5 +125,96 @@ describe('settings', () => {
     expect(writeClipboard).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Konfiguration kopieren' }));
     expect(writeClipboard).toHaveBeenCalledWith(config.textContent);
+  });
+});
+
+describe('focus after closing non-modal parts', () => {
+  it('gives the focus back to the package row when the details close', async () => {
+    const user = userEvent.setup();
+    mockBackend();
+    renderApp(<SoftwarePage />);
+    const row = (await screen.findAllByRole('button', { name: /^Details zu / }))[0];
+    if (!row) throw new Error('no package row');
+    await user.click(row);
+    await user.click(await screen.findByRole('button', { name: 'Details schließen' }));
+    await waitFor(() => expect(row).toHaveFocus());
+  });
+
+  it('moves the focus to the page title when a result is dismissed', async () => {
+    const user = userEvent.setup();
+    mockBackend();
+    const failed: Operation = {
+      id: '77777777-7777-4777-8777-777777777777',
+      kind: 'systemUpgrade',
+      origin: 'user',
+      requestedAt: 1_790_000_000,
+      state: 'failed',
+      packageTargets: [],
+      startedAt: 1_790_000_001,
+      endedAt: 1_790_000_050,
+      exitCode: 1,
+      summary: 'downloading failed',
+      error: { code: 'TRANSACTION_FAILED', message: 'failed retrieving file', detail: null },
+      commitStarted: false,
+      confirmedDigest: 'd'.repeat(64),
+      actualPlan: null,
+      progress: { currentPackage: null, packagesDone: 0, packagesTotal: 12, step: null },
+      snapshot: null,
+      newPacnewFiles: 0,
+      changes: { installed: 0, upgraded: 0, downgraded: 0, reinstalled: 0, removed: 0, packages: [] },
+      outcomeUnknown: false,
+    };
+    vi.spyOn(api, 'getCurrentOperation').mockResolvedValue(failed);
+    vi.spyOn(api, 'getOperation').mockResolvedValue(failed);
+    vi.spyOn(api, 'getOperationLog').mockResolvedValue({ lines: [], nextOffset: 0, complete: true });
+    render(<App />);
+    await user.click(await screen.findByRole('button', { name: 'Ergebnis schließen' }));
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveFocus());
+  });
+
+  it('keeps the focus in the operation panel after cancelling', async () => {
+    const user = userEvent.setup();
+    mockBackend();
+    const downloading: Operation = {
+      id: '88888888-8888-4888-8888-888888888888',
+      kind: 'systemUpgrade',
+      origin: 'user',
+      requestedAt: 1_790_000_000,
+      state: 'downloading',
+      packageTargets: [],
+      startedAt: 1_790_000_001,
+      endedAt: null,
+      exitCode: null,
+      summary: '',
+      error: null,
+      commitStarted: false,
+      confirmedDigest: 'e'.repeat(64),
+      actualPlan: null,
+      progress: { currentPackage: 'mesa', packagesDone: 0, packagesTotal: 12, step: 'downloadingPackages' },
+      snapshot: null,
+      newPacnewFiles: 0,
+      changes: { installed: 0, upgraded: 0, downgraded: 0, reinstalled: 0, removed: 0, packages: [] },
+      outcomeUnknown: false,
+    };
+    const cancelled: Operation = { ...downloading, state: 'cancelledBeforeCommit', endedAt: 1_790_000_030 };
+    vi.spyOn(api, 'getCurrentOperation').mockResolvedValue(downloading);
+    const poll = vi.spyOn(api, 'getOperation').mockResolvedValue(downloading);
+    vi.spyOn(api, 'getOperationLog').mockResolvedValue({ lines: [], nextOffset: 0, complete: false });
+    vi.spyOn(api, 'cancelOperation').mockImplementation(async () => {
+      poll.mockResolvedValue(cancelled);
+      return cancelled;
+    });
+    render(<App />);
+    await user.click(await screen.findByRole('button', { name: 'Abbrechen' }));
+    await waitFor(() => expect(document.getElementById('operation-panel-title')).toHaveFocus());
+    expect(await screen.findByRole('button', { name: 'Ergebnis schließen' })).toBeInTheDocument();
+  });
+
+  it('keeps the focus in the news row after marking the news as read', async () => {
+    const user = userEvent.setup();
+    mockBackend('newsUnread');
+    renderApp(<UpdatesPage />);
+    await user.click(await screen.findByRole('button', { name: 'Als gelesen markieren' }));
+    await waitFor(() => expect(screen.getByText(/Keine ungelesenen Meldungen/)).toHaveFocus());
   });
 });

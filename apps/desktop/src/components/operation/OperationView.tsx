@@ -261,7 +261,9 @@ export function OperationView(props: OperationViewProps) {
         <span className="operation-panel__icon">
           <StateIcon operation={operation} />
         </span>
-        <h2 className="operation-panel__title">{title}</h2>
+        <h2 className="operation-panel__title" id="operation-panel-title" tabIndex={-1}>
+          {title}
+        </h2>
         <Badge tone={operation ? stateTone(operation) : 'info'}>{label}</Badge>
         <div className="operation-panel__actions">
           <Button size="sm" variant="ghost" icon={expanded ? <ChevronUp /> : <ChevronDown />} onClick={onToggleExpanded} aria-expanded={expanded} aria-controls="operation-panel-body">
