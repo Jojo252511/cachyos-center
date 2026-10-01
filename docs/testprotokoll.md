@@ -41,7 +41,7 @@ cargo deny check advisories licenses bans sources
 
 ## Ergebnisse
 
-Lauf vom 2026-10-01 auf dem Entwicklungsrechner, Commit `a905b3a` (nach Prüfdurchlauf 2).
+Lauf vom 2026-10-01 auf dem Entwicklungsrechner, Rust auf Commit `a905b3a` (nach Prüfdurchlauf 2, seitdem unverändert), Oberfläche auf Commit `f468766` (nach Prüfdurchlauf 3).
 
 | Befehl | Ergebnis |
 |---|---|
@@ -50,7 +50,7 @@ Lauf vom 2026-10-01 auf dem Entwicklungsrechner, Commit `a905b3a` (nach Prüfdur
 | `CC_REQUIRE_BRIDGE=1 CC_REQUIRE_SANDBOX=1 cargo test --workspace --locked` | **298 bestanden, 0 fehlgeschlagen**, 3 ignoriert (Netzwerk) |
 | `cargo test --workspace --locked -- --ignored` | 3 von 3 bestanden: `isolated_update_check`, `fetches_the_official_feeds`, `notify_only_checks_without_installing` |
 | `npm run typecheck`, `npm run lint` | sauber |
-| `npm test` | **79 bestanden** in 16 Testdateien |
+| `npm test` | **80 bestanden** in 16 Testdateien |
 | `npm run build` | erfolgreich |
 | `npm audit --audit-level=high` | 0 Schwachstellen |
 | `cargo deny check advisories licenses bans sources` | in CI bestanden (lokal nicht installiert) |
@@ -107,7 +107,7 @@ soweit sie nicht durch einen neueren Push abgebrochen wurden; gitleaks fand kein
 | `checkupdates` blockiert nie an einer vollen Pipe; Zeitüberschreitung wird gemeldet | `check.rs`: `long_output_never_blocks_the_check`, `timeout_is_reported` | bestanden |
 | MCP nur lesend, standardmäßig aus, stdout nur Protokoll; ohne Prüfung `updateCount: null` statt 0 | `crates/mcp/tests/host.rs`, `crates/mcp/src/tests.rs` | bestanden |
 | Paketierung passt zum Code (Bus-Name, Polkit-Aktionen, Units, Fensterklasse, Pfade) | `crates/core/tests/packaging.rs` | bestanden |
-| Oberfläche: Upgrade-/Installations-/Entfernen-Dialog, Planabweichung, Fortschritt, Auto-Update, Fokusführung (Dialoge, Paketdetails, Vorgangsergebnis, Abbrechen, News), Hinweis auf Teilaktualisierung, zurückgehaltene Pakete | `apps/desktop/src/**/*.test.tsx` | bestanden |
+| Oberfläche: Upgrade-/Installations-/Entfernen-Dialog, Planabweichung, Fortschritt, Auto-Update, Fokusführung (Dialoge, Paketdetails, Vorgangsergebnis, Abbrechen, News, Buttons im Zustand „busy“), Hinweis auf Teilaktualisierung, zurückgehaltene Pakete | `apps/desktop/src/**/*.test.tsx`; die Fokus-Tests sind per Mutationsprobe gegen das alte Verhalten geprüft | bestanden |
 
 ## Manuelle Prüfungen auf dem Entwicklungsrechner
 
@@ -122,6 +122,7 @@ Alle Prüfungen ohne Root und ohne Änderung an Paketen oder Systemdiensten.
 | Offline (F1) | `unshare --user --net` (eigener Netzwerk-Namespace ohne Verbindung), `dump check` und `dump dashboard` | Prüfung endet mit Status `failed`, Code `OFFLINE`, kein „0 Updates“; installierte Pakete (1.479), Lock-Status und Systeminformationen bleiben lesbar; kein `db.lck` |
 | Nicht unterstützte libalpm (F7) | Kopie der Bridge mit `patchelf --replace-needed libalpm.so.16 libalpm.so.17`, Start von `dump` und der GUI aus dem Paket | App startet, „Paketfunktionen nicht verfügbar“ mit deutscher Erklärung (libalpm passt nicht zu diesem Build) und technischem Grund; Systeminformationen bleiben verfügbar. Dabei zwei Fehler gefunden und behoben: die dlopen-Ursache ging verloren, und die Oberfläche zeigte nur englischen Text |
 | Produktive Sync-Datenbank | Zeitstempel von `/var/lib/pacman/sync` vor und nach der isolierten Prüfung (`isolated_update_check`) | unverändert |
+| Fokusführung mit echten Tastendrücken | Vite-Vorschau mit Mock-Daten im Chromium-Browserbereich: „Jetzt prüfen“ und „Als gelesen markieren“ per Enter, Fokus über `document.activeElement` und `focusin`/`focusout` protokolliert | „Jetzt prüfen“ behält während der Prüfung den Fokus (busy, nicht deaktiviert) und danach; nach „Als gelesen markieren“ steht der Fokus auf derselben Statuszeile („Keine ungelesenen Meldungen“). WebKitGTK wurde dafür nicht gesondert gemessen: Beide Lösungen hängen nicht von der Engine ab (kein deaktiviertes Element, kein ersetztes Fokusziel) |
 
 ## VM-Testmatrix
 
