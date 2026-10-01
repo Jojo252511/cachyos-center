@@ -70,22 +70,32 @@ pub fn candidates() -> Vec<PathBuf> {
     list
 }
 
+/// libloading only names the failed call (`dlopen failed`); the reason, e.g.
+/// a missing `libalpm.so.N`, is the error source.
+fn describe(e: &libloading::Error) -> String {
+    use std::error::Error as _;
+    match e.source() {
+        Some(source) => format!("{e}: {source}"),
+        None => e.to_string(),
+    }
+}
+
 fn load_from(path: &Path) -> Result<Loaded, String> {
     // SAFETY: loading a library runs its initializers. Only the bridge built
     // from this repository is expected at these locations; release builds
     // running as root only accept the root-owned installation directory.
-    let lib = unsafe { libloading::Library::new(path) }.map_err(|e| e.to_string())?;
+    let lib = unsafe { libloading::Library::new(path) }.map_err(|e| describe(&e))?;
     // SAFETY: the symbols are declared with exactly these signatures in the bridge.
     let (protocol, call, free) = unsafe {
         let protocol: ProtocolFn = *lib
             .get::<ProtocolFn>(b"cc_alpm_bridge_protocol\0")
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| describe(&e))?;
         let call: CallFn = *lib
             .get::<CallFn>(b"cc_alpm_bridge_call\0")
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| describe(&e))?;
         let free: FreeFn = *lib
             .get::<FreeFn>(b"cc_alpm_bridge_free\0")
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| describe(&e))?;
         (protocol, call, free)
     };
     // SAFETY: no arguments, returns a constant.
@@ -219,5 +229,15 @@ mod tests {
                 .contains("not compatible")
         );
         assert!(unavailable_text("not found").contains("could not be loaded"));
+    }
+
+    #[test]
+    fn load_errors_carry_the_reason() {
+        let Err(reason) = load_from(Path::new("/nonexistent/cachyos-center-test/libmissing.so"))
+        else {
+            panic!("a missing library must not load");
+        };
+        assert!(reason.starts_with("dlopen failed: "), "{reason}");
+        assert!(reason.contains("libmissing.so"), "{reason}");
     }
 }
