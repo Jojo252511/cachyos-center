@@ -97,7 +97,10 @@ Offline-Updatepfad nicht in einer VM verifiziert ist. Details: [Automatische Upd
 ## Abhängigkeiten
 
 CI prüft mit `cargo deny` Advisories, Lizenzen und Quellen sowie mit `npm audit` die
-Frontend-Abhängigkeiten. Stand 2026-09-30 meldet `cargo audit` zwei Warnungen, beide transitiv
+Frontend-Abhängigkeiten. Ein eigener Job durchsucht bei jedem Lauf alle Commits mit `gitleaks`
+nach Zugangsdaten (Version und SHA-256 der Programmdatei sind in der Workflow-Datei festgelegt).
+cachyos-center selbst verwendet keine Zugangsdaten; die CI nutzt nur das Standard-Token mit
+Leserechten. Stand 2026-09-30 meldet `cargo audit` zwei Warnungen, beide transitiv
 über den Linux-Stack von Tauri 2 (gtk-rs 0.18) und nicht von cachyos-center-Code genutzt:
 `RUSTSEC-2024-0370` (proc-macro-error nicht mehr gepflegt, nur zur Compile-Zeit) und
 `RUSTSEC-2024-0429` (`glib::VariantStrIter`, wird nicht verwendet). Sie entfallen mit einem

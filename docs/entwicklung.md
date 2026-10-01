@@ -73,6 +73,7 @@ CI schlägt fehl, wenn die erzeugten Dateien nicht committet sind.
 
 `cargo fmt`, `cargo clippy -D warnings`, `cargo test`, TypeScript-Typecheck, Lint, UI-Tests,
 Frontend-Build, `cargo deny` (Advisories, Lizenzen, Quellen), `npm audit --audit-level=high`,
+Secret-Scan der gesamten Git-Historie mit `gitleaks`,
 Paketbau mit makepkg und ein manueller End-to-End-Lauf auf einer VM bzw. echtem
 CachyOS-Hyprland-System (siehe [Testprotokoll](testprotokoll.md)). Keine Freigabe nur aufgrund
 grüner Mock-Tests.
