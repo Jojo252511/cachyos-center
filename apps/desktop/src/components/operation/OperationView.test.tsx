@@ -23,7 +23,7 @@ function operation(patch: Partial<Operation>): Operation {
     commitStarted: false,
     confirmedDigest: 'a'.repeat(64),
     actualPlan: null,
-    progress: { currentPackage: 'mesa', packagesDone: 0, packagesTotal: 12, phaseDetail: 'retrieving packages' },
+    progress: { currentPackage: 'mesa', packagesDone: 0, packagesTotal: 12, step: 'downloadingPackages' },
     snapshot: null,
     newPacnewFiles: 0,
     changes: { installed: 0, upgraded: 0, downgraded: 0, reinstalled: 0, removed: 0, packages: [] },
@@ -62,27 +62,28 @@ describe('OperationView', () => {
     const props = renderView(operation({ state: 'downloading' }));
     expect(screen.getAllByText('Pakete werden heruntergeladen').length).toBeGreaterThan(0);
     expect(screen.getByText('0 von 12 Paketen')).toBeInTheDocument();
+    expect(screen.getByText('Pakete werden heruntergeladen und ihre Signaturen geprüft …')).toBeInTheDocument();
     expect(screen.getByRole('progressbar', { name: 'Verarbeitete Pakete' })).toHaveAttribute('max', '12');
     await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
     expect(props.onCancel).toHaveBeenCalledTimes(1);
   });
 
   it('shows no cancel button but the danger text while installing', () => {
-    renderView(operation({ state: 'installing', commitStarted: true, progress: { currentPackage: 'systemd', packagesDone: 5, packagesTotal: 12, phaseDetail: null } }));
+    renderView(operation({ state: 'installing', commitStarted: true, progress: { currentPackage: 'systemd', packagesDone: 5, packagesTotal: 12, step: null } }));
     expect(screen.queryByRole('button', { name: 'Abbrechen' })).not.toBeInTheDocument();
     expect(screen.getByText('Installation läuft; Abbruch möglicherweise gefährlich')).toBeInTheDocument();
     expect(screen.getByText('5 von 12 Paketen')).toBeInTheDocument();
   });
 
   it('shows the progress text only when the total is known', () => {
-    renderView(operation({ state: 'preparing', progress: { currentPackage: null, packagesDone: 0, packagesTotal: null, phaseDetail: 'checking plan' } }));
+    renderView(operation({ state: 'preparing', progress: { currentPackage: null, packagesDone: 0, packagesTotal: null, step: 'synchronizingDatabases' } }));
     expect(screen.queryByText(/von \d+ Paketen/)).not.toBeInTheDocument();
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByText('Die Paketanzahl wird angezeigt, sobald pacman sie meldet.')).toBeInTheDocument();
   });
 
   it('asks to authenticate in the polkit dialog without a password field', () => {
-    renderView(operation({ state: 'awaitingAuthorization', progress: { currentPackage: null, packagesDone: 0, packagesTotal: null, phaseDetail: null } }));
+    renderView(operation({ state: 'awaitingAuthorization', progress: { currentPackage: null, packagesDone: 0, packagesTotal: null, step: null } }));
     expect(screen.getAllByText('Warte auf Authentifizierung …').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Abbrechen' })).toBeInTheDocument();
     expect(document.querySelector('input[type="password"]')).toBeNull();

@@ -20,7 +20,8 @@ use std::time::Duration;
 use cachyos_center_core::dbus::actions;
 use cachyos_center_core::history::LogOutcome;
 use cachyos_center_core::operation::{
-    ChangeCounts, Operation, OperationKind, OperationOrigin, OperationState, SnapshotResult,
+    ChangeCounts, Operation, OperationKind, OperationOrigin, OperationState, OperationStep,
+    SnapshotResult,
 };
 use cachyos_center_core::package::PackageOrigin;
 use cachyos_center_core::plan::TransactionPlan;
@@ -503,7 +504,7 @@ impl Engine {
         // 3. Refresh and verify the plan.
         if !matches!(request, Request::Remove { .. }) {
             self.with_op(id, |op| {
-                op.progress.phase_detail = Some("synchronizing package databases".into())
+                op.progress.step = Some(OperationStep::SynchronizingDatabases);
             });
             let outcome = self.step(id, Step::Refresh).await?;
             self.check_cancel(id)?;
@@ -573,7 +574,7 @@ impl Engine {
         self.transition(id, OperationState::Downloading)?;
         self.with_op(id, |op| {
             op.summary = "downloading and verifying packages".into();
-            op.progress.phase_detail = Some("downloading and verifying packages".into());
+            op.progress.step = Some(OperationStep::DownloadingPackages);
         });
         let outcome = self.step(id, step).await?;
         self.check_cancel(id)?;
@@ -598,7 +599,7 @@ impl Engine {
         self.transition(id, OperationState::Installing)?;
         self.with_op(id, |op| {
             op.summary = "installing; interrupting may be dangerous".into();
-            op.progress.phase_detail = Some("applying package changes".into());
+            op.progress.step = Some(OperationStep::ApplyingChanges);
         });
 
         let inhibitor = crate::inhibit::acquire().await;
@@ -644,7 +645,7 @@ impl Engine {
             op.new_pacnew_files = pacnew;
             op.exit_code = outcome.and_then(|o| o.exit_code);
             op.progress.current_package = None;
-            op.progress.phase_detail = None;
+            op.progress.step = None;
             let t = now();
             match (log_outcome, exit_ok) {
                 (Some(LogOutcome::Completed), true) => {
@@ -782,7 +783,7 @@ impl Engine {
                 .into());
             }
             self.with_op(id, |op| {
-                op.progress.phase_detail = Some("waiting for another package manager".into())
+                op.progress.step = Some(OperationStep::WaitingForLock)
             });
             tokio::time::sleep(delay).await;
             delay = (delay * 2).min(Duration::from_secs(15));

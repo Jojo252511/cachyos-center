@@ -4,8 +4,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { api } from '../../api/client';
 import type { AutoUpdateStatus } from '../../bindings/AutoUpdateStatus';
+import type { Operation } from '../../bindings/Operation';
+import { createTranslate } from '../../i18n';
 import { mockBackend, renderApp } from '../../test/utils';
-import { AutoUpdateSection } from './AutoUpdateSection';
+import { AutoUpdateSection, timerResultText } from './AutoUpdateSection';
 
 describe('AutoUpdateSection', () => {
   it('disables „Automatisch beim nächsten Neustart installieren“ with blockers and explains it directly below', async () => {
@@ -20,6 +22,42 @@ describe('AutoUpdateSection', () => {
     ).toHaveTextContent('cachyos-center startet den Rechner nie automatisch neu.');
     expect(screen.getByText('pacman-offline ist nicht installiert.')).toBeInTheDocument();
     expect(screen.getByText(/muss von der Administration freigeschaltet werden/)).toBeInTheDocument();
+    // Guidance to the existing CachyOS workflow while the mode is blocked.
+    expect(screen.getByText(/den bestehenden CachyOS-Weg nutzen/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /CachyOS-Anleitung zu Updates und pacman-offline/ })).toBeInTheDocument();
+  });
+
+  it('describes the last timer run in German and keeps the English summary as detail', () => {
+    const t = createTranslate('de');
+    const base: Operation = {
+      id: '55555555-5555-4555-8555-555555555555',
+      kind: 'updateCheck',
+      origin: 'timer',
+      requestedAt: 1_790_000_000,
+      state: 'succeeded',
+      packageTargets: [],
+      startedAt: 1_790_000_000,
+      endedAt: 1_790_000_060,
+      exitCode: null,
+      summary: '3 updates available',
+      error: null,
+      commitStarted: false,
+      confirmedDigest: null,
+      actualPlan: null,
+      progress: { currentPackage: null, packagesDone: 0, packagesTotal: 3, step: null },
+      snapshot: null,
+      newPacnewFiles: 0,
+      changes: { installed: 0, upgraded: 0, downgraded: 0, reinstalled: 0, removed: 0, packages: [] },
+      outcomeUnknown: false,
+    };
+    expect(timerResultText(base, t)).toBe('3 Updates verfügbar');
+    expect(timerResultText({ ...base, progress: { ...base.progress, packagesTotal: 0 } }, t)).toBe('System aktuell, keine Updates');
+    expect(timerResultText({ ...base, kind: 'autoUpdatePrepare', progress: { ...base.progress, packagesTotal: 1 } }, t)).toBe(
+      '1 Update für den nächsten Neustart vorbereitet',
+    );
+    expect(
+      timerResultText({ ...base, state: 'failed', progress: { ...base.progress, packagesTotal: null }, error: { code: 'OFFLINE', message: 'no network connection', detail: null } }, t),
+    ).toBe(`Fehlgeschlagen – ${t('error.OFFLINE.title')}`);
   });
 
   it('applies the policy only with the separate „Übernehmen“ button', async () => {

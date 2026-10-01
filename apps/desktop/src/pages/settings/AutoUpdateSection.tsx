@@ -2,21 +2,23 @@ import { CalendarClock, Check, Newspaper } from 'lucide-react';
 import { useId, useState } from 'react';
 
 import { api } from '../../api/client';
-import { normalizeError } from '../../api/errors';
+import { DOC_URLS, normalizeError } from '../../api/errors';
 import type { AppError } from '../../bindings/AppError';
 import type { AutoUpdateConfig } from '../../bindings/AutoUpdateConfig';
 import type { AutoUpdatePolicy } from '../../bindings/AutoUpdatePolicy';
 import type { AutoUpdateStatus } from '../../bindings/AutoUpdateStatus';
+import type { Operation } from '../../bindings/Operation';
 import type { Weekday } from '../../bindings/Weekday';
 import { Badge } from '../../components/Badge';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { ErrorPanel } from '../../components/ErrorPanel';
+import { ExternalLink } from '../../components/ExternalLink';
 import { Checkbox, RadioCards } from '../../components/Form';
 import { KeyValue, KeyValueList } from '../../components/KeyValue';
 import { Notice } from '../../components/Notice';
 import { ErrorState, LoadingState } from '../../components/StateViews';
-import { useI18n, type MessageKey } from '../../i18n';
+import { useI18n, type MessageKey, type Translate } from '../../i18n';
 import { useResource } from '../../state/useResource';
 
 export const WEEKDAYS: readonly Weekday[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -30,6 +32,24 @@ const BLOCKER_KEYS: Record<string, MessageKey> = {
   externalPrepareTimer: 'settings.auto.blocker.externalPrepareTimer',
   offlineConfHoldsPackages: 'settings.auto.blocker.offlineConfHoldsPackages',
 };
+
+/**
+ * Localized result of the last timer run. The helper's summary is English and
+ * only shown as technical detail.
+ */
+export function timerResultText(result: Operation, t: Translate): string {
+  if (result.state === 'succeeded') {
+    const count = result.progress.packagesTotal;
+    if (count === 0) return t('settings.auto.result.upToDate');
+    if (count !== null) {
+      return result.kind === 'autoUpdatePrepare'
+        ? t('settings.auto.result.prepared', { count })
+        : t('settings.auto.result.updates', { count });
+    }
+  }
+  const state = t(`operation.state.${result.state}`);
+  return result.error ? `${state} – ${t(`error.${result.error.code}.title`)}` : state;
+}
 
 interface Draft {
   policy: AutoUpdatePolicy;
@@ -153,6 +173,10 @@ export function AutoUpdateSection() {
                       <li key={blocker}>{BLOCKER_KEYS[blocker] ? t(BLOCKER_KEYS[blocker]) : t('settings.auto.blocker.unknown', { id: blocker })}</li>
                     ))}
                   </ul>
+                  <p>{t('settings.auto.cachyosWorkflow')}</p>
+                  <p>
+                    <ExternalLink url={DOC_URLS.cachyosPostInstall}>{t('settings.auto.cachyosWorkflowLink')}</ExternalLink>
+                  </p>
                 </div>
               ) : null}
             </div>
@@ -217,7 +241,16 @@ export function AutoUpdateSection() {
         <KeyValue label={t('settings.auto.nextRun')}>{data.nextRun !== null ? fmt.dateTime(data.nextRun) : '–'}</KeyValue>
         <KeyValue label={t('settings.auto.lastRun')}>{data.lastRun !== null ? fmt.dateTime(data.lastRun) : t('common.never')}</KeyValue>
         <KeyValue label={t('settings.auto.lastResult')}>
-          {data.lastResult ? `${t(`operation.state.${data.lastResult.state}`)}${data.lastResult.summary ? ` – ${data.lastResult.summary}` : ''}` : '–'}
+          {data.lastResult ? (
+            <>
+              {timerResultText(data.lastResult, t)}
+              {data.lastResult.summary ? (
+                <span className="muted block break">{t('common.technicalDetail', { detail: data.lastResult.summary })}</span>
+              ) : null}
+            </>
+          ) : (
+            '–'
+          )}
         </KeyValue>
         <KeyValue label={t('settings.auto.prepared')}>{data.preparedForNextReboot ? t('common.yes') : t('common.no')}</KeyValue>
         <KeyValue label={t('settings.auto.external')}>

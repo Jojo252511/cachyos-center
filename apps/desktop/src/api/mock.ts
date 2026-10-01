@@ -716,7 +716,7 @@ function newOperation(state: MockState, kind: OperationKind, targets: string[], 
       commitStarted: false,
       confirmedDigest,
       actualPlan: null,
-      progress: { currentPackage: null, packagesDone: 0, packagesTotal: null, phaseDetail: 'waiting for polkit authorization' },
+      progress: { currentPackage: null, packagesDone: 0, packagesTotal: null, step: null },
       snapshot: null,
       newPacnewFiles: 0,
       changes: { installed: 0, upgraded: 0, downgraded: 0, reinstalled: 0, removed: 0, packages: [] },
@@ -737,7 +737,7 @@ function finish(state: MockState, mop: MockOperation, next: OperationState, summ
   mop.op.summary = summary;
   mop.op.error = error;
   mop.op.progress.currentPackage = null;
-  mop.op.progress.phaseDetail = null;
+  mop.op.progress.step = null;
   mop.op.exitCode = next === 'succeeded' ? 0 : next === 'cancelledBeforeCommit' ? null : 1;
   state.activity.unshift({
     id: mop.op.id,
@@ -813,7 +813,7 @@ async function runLifecycle(state: MockState, mop: MockOperation, resumeAtInstal
     await wait(1100);
     if (isDone(mop)) return;
     op.state = 'preparing';
-    op.progress.phaseDetail = 'checking plan and database lock';
+    op.progress.step = 'synchronizingDatabases';
     log(mop, 'authorization granted', ':: Synchronizing package databases...', ' cachyos-v3 downloading...', ' cachyos-core-v3 downloading...', ' cachyos-extra-v3 downloading...', ' core downloading...', ' extra downloading...', ' multilib downloading...');
     await wait(500);
     if (isDone(mop)) return;
@@ -843,7 +843,7 @@ async function runLifecycle(state: MockState, mop: MockOperation, resumeAtInstal
 
     if (!isRemove) {
       op.state = 'downloading';
-      op.progress.phaseDetail = 'retrieving packages';
+      op.progress.step = 'downloadingPackages';
       log(mop, ':: Retrieving packages...');
       for (const entry of entries) {
         if (entry.downloadSize === null || entry.downloadSize === 0) continue;
@@ -853,7 +853,7 @@ async function runLifecycle(state: MockState, mop: MockOperation, resumeAtInstal
         if (isDone(mop)) return;
       }
       op.progress.currentPackage = null;
-      op.progress.phaseDetail = 'checking keyring';
+      op.progress.step = 'downloadingPackages';
       log(mop, 'checking keyring...', 'checking package integrity...');
       await wait(300);
       if (isDone(mop)) return;
@@ -867,13 +867,13 @@ async function runLifecycle(state: MockState, mop: MockOperation, resumeAtInstal
     }
     op.state = 'installing';
     op.commitStarted = true;
-    op.progress.phaseDetail = 'running pre-transaction hooks';
+    op.progress.step = 'applyingChanges';
     log(mop, ':: Running pre-transaction hooks...', '(1/2) Performing snapper pre snapshots for the following configurations...', '(2/2) Removing old entries from the ESP...', `:: Processing package changes...`);
     await wait(250);
     if (isDone(mop)) return;
   }
 
-  op.progress.phaseDetail = isRemove ? 'removing packages' : 'installing packages';
+  op.progress.step = 'applyingChanges';
   for (let i = resumeAtInstall; i < entries.length; i += 1) {
     const entry = entries[i]!;
     op.progress.currentPackage = entry.name;
@@ -892,7 +892,7 @@ async function runLifecycle(state: MockState, mop: MockOperation, resumeAtInstal
     }
   }
   op.progress.currentPackage = null;
-  op.progress.phaseDetail = 'running post-transaction hooks';
+  op.progress.step = 'applyingChanges';
   log(mop, ':: Running post-transaction hooks...', '(1/5) Arming ConditionNeedsUpdate...', '(2/5) Updating module dependencies...', '(3/5) Updating linux initcpios...', '(4/5) Reloading system manager configuration...', '(5/5) Performing snapper post snapshots for the following configurations...');
   await wait(300);
   applySuccess(state, mop);
@@ -937,7 +937,7 @@ function resumeRunningUpgrade(state: MockState): void {
   mop.op.startedAt = now - 38;
   mop.op.state = 'installing';
   mop.op.commitStarted = true;
-  mop.op.progress = { currentPackage: plan.entries[4]?.name ?? null, packagesDone: 4, packagesTotal: plan.entries.length, phaseDetail: 'installing packages' };
+  mop.op.progress = { currentPackage: plan.entries[4]?.name ?? null, packagesDone: 4, packagesTotal: plan.entries.length, step: 'applyingChanges' };
   log(mop, '==> pacman -Syu requested', 'authorization granted', ':: Synchronizing package databases...', ':: Starting full system upgrade...', ':: Retrieving packages...', 'checking keyring...', 'checking package integrity...', ':: Processing package changes...');
   plan.entries.slice(0, 4).forEach((e, i) => log(mop, `(${i + 1}/${plan.entries.length}) upgrading ${e.name}`));
   void runLifecycle(state, mop, 4);

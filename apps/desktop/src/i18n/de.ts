@@ -50,6 +50,7 @@ export const de = {
   'common.active': 'aktiv',
   'common.inactive': 'inaktiv',
   'common.never': 'nie',
+  'common.technicalDetail': 'Technische Details: {detail}',
   'common.more': { one: 'und {count} weiteres', other: 'und {count} weitere' },
 
   // Status words (never color only)
@@ -189,7 +190,10 @@ export const de = {
   'operation.awaitingAuthorizationHint':
     'Bestätige die Anfrage im Authentifizierungsdialog deines Systems (Polkit). cachyos-center fragt nie selbst nach einem Passwort.',
   'operation.currentPackage': 'Aktuelles Paket: {name}',
-  'operation.phaseDetail': 'pacman: {detail}',
+  'operation.step.waitingForLock': 'Warte, bis ein anderer Paketmanager fertig ist …',
+  'operation.step.synchronizingDatabases': 'Paketdatenbanken werden synchronisiert …',
+  'operation.step.downloadingPackages': 'Pakete werden heruntergeladen und ihre Signaturen geprüft …',
+  'operation.step.applyingChanges': 'pacman wendet die Paketänderungen an …',
   'operation.progress': '{done} von {total} Paketen',
   'operation.progressLabel': 'Verarbeitete Pakete',
   'operation.progressUnknown': 'Die Paketanzahl wird angezeigt, sobald pacman sie meldet.',
@@ -864,6 +868,12 @@ export const de = {
   'settings.auto.blocker.offlineConfHoldsPackages':
     'offline.conf hält Pakete bei Online-Updates zurück. Diese Kombination ist noch nicht geprüft; der Automatikmodus bleibt dafür gesperrt.',
   'settings.auto.blocker.unknown': 'Weiterer Blocker: {id}',
+  'settings.auto.cachyosWorkflow':
+    'Bis zur Freigabe kannst du den bestehenden CachyOS-Weg nutzen: pacman-offline nach der offiziellen Anleitung einrichten und selbst steuern. cachyos-center zeigt einen solchen Timer dann als „extern verwaltet“ an und startet keine konkurrierende Vorbereitung.',
+  'settings.auto.cachyosWorkflowLink': 'CachyOS-Anleitung zu Updates und pacman-offline',
+  'settings.auto.result.upToDate': 'System aktuell, keine Updates',
+  'settings.auto.result.updates': { one: '{count} Update verfügbar', other: '{count} Updates verfügbar' },
+  'settings.auto.result.prepared': { one: '{count} Update für den nächsten Neustart vorbereitet', other: '{count} Updates für den nächsten Neustart vorbereitet' },
   'settings.auto.window': 'Zeitfenster',
   'settings.auto.weekdays': 'Wochentage',
   'settings.auto.time': 'Uhrzeit',

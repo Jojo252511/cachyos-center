@@ -51,6 +51,7 @@ export const en: Record<MessageKey, Message> = {
   'common.active': 'active',
   'common.inactive': 'inactive',
   'common.never': 'never',
+  'common.technicalDetail': 'Technical detail: {detail}',
   'common.more': { one: 'and {count} more', other: 'and {count} more' },
 
   // Status words (never color only)
@@ -184,7 +185,10 @@ export const en: Record<MessageKey, Message> = {
   'operation.awaitingAuthorizationHint':
     'Confirm the request in the authentication dialog of your system (polkit). cachyos-center never asks for a password itself.',
   'operation.currentPackage': 'Current package: {name}',
-  'operation.phaseDetail': 'pacman: {detail}',
+  'operation.step.waitingForLock': 'Waiting for another package manager to finish …',
+  'operation.step.synchronizingDatabases': 'Synchronizing the package databases …',
+  'operation.step.downloadingPackages': 'Downloading packages and verifying their signatures …',
+  'operation.step.applyingChanges': 'pacman is applying the package changes …',
   'operation.progress': '{done} of {total} packages',
   'operation.progressLabel': 'Processed packages',
   'operation.progressUnknown': 'The package count is shown as soon as pacman reports it.',
@@ -847,6 +851,12 @@ export const en: Record<MessageKey, Message> = {
   'settings.auto.blocker.offlineConfHoldsPackages':
     'offline.conf holds back packages for online updates. This combination has not been verified yet; the automatic mode stays locked for it.',
   'settings.auto.blocker.unknown': 'Further blocker: {id}',
+  'settings.auto.cachyosWorkflow':
+    'Until this mode is released you can use the existing CachyOS way: set up and control pacman-offline following the official guide. cachyos-center then shows such a timer as “managed externally” and never starts a competing preparation.',
+  'settings.auto.cachyosWorkflowLink': 'CachyOS guide to updates and pacman-offline',
+  'settings.auto.result.upToDate': 'System up to date, no updates',
+  'settings.auto.result.updates': { one: '{count} update available', other: '{count} updates available' },
+  'settings.auto.result.prepared': { one: '{count} update prepared for the next reboot', other: '{count} updates prepared for the next reboot' },
   'settings.auto.window': 'Time window',
   'settings.auto.weekdays': 'Weekdays',
   'settings.auto.time': 'Time',

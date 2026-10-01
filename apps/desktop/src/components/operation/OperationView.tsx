@@ -90,7 +90,7 @@ function ProgressInfo({ operation }: { operation: Operation }) {
   return (
     <div className="operation-progress">
       {progress.currentPackage ? <p>{t('operation.currentPackage', { name: progress.currentPackage })}</p> : null}
-      {progress.phaseDetail ? <p className="muted">{t('operation.phaseDetail', { detail: progress.phaseDetail })}</p> : null}
+      {progress.step ? <p className="muted">{t(`operation.step.${progress.step}`)}</p> : null}
       {total !== null && total > 0 ? (
         <div className="operation-progress__count">
           <progress className="progress" value={progress.packagesDone} max={total} aria-label={t('operation.progressLabel')} />

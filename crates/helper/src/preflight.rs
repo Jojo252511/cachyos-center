@@ -9,6 +9,7 @@
 
 use std::path::Path;
 use std::process::{Command, Stdio};
+use std::time::{Duration, Instant};
 
 use cachyos_center_core::operation::{Operation, OperationKind, OperationOrigin, OperationState};
 use cachyos_center_core::plan::PlanWarning;
@@ -25,6 +26,27 @@ use crate::journal::Journal;
 
 /// Minimum free space on `/` for an unattended preparation (2 GiB).
 const MIN_FREE: u64 = 2 * 1024 * 1024 * 1024;
+/// Maximum wait for another package manager before giving up (bounded backoff).
+const PACKAGE_MANAGER_WAIT: Duration = Duration::from_secs(10 * 60);
+
+/// Waits up to `limit` until no other package manager runs (bounded backoff).
+/// The lock file is never removed. Returns `false` when it is still busy.
+async fn wait_for_package_manager(lock_file: &Path, limit: Duration) -> bool {
+    let deadline = Instant::now() + limit;
+    let mut delay = Duration::from_secs(5);
+    loop {
+        let busy = lock::is_locked(lock_file) || lock::package_manager_running() == Some(true);
+        if !busy {
+            return true;
+        }
+        if Instant::now() >= deadline {
+            return false;
+        }
+        tracing::info!("another package manager is running; waiting {delay:?}");
+        tokio::time::sleep(delay.min(deadline.saturating_duration_since(Instant::now()))).await;
+        delay = (delay * 2).min(Duration::from_secs(60));
+    }
+}
 
 fn read_policy(path: &Path) -> Result<AutoUpdateConfig, AppError> {
     match std::fs::read_to_string(path) {
@@ -144,10 +166,8 @@ async fn prepare(run: &mut Run<'_>, policy: &AutoUpdateConfig, packages: Package
     if !reasons.is_empty() {
         return run.needs_attention(&reasons);
     }
-    if lock::is_locked(Path::new("/var/lib/pacman/db.lck"))
-        || lock::package_manager_running() == Some(true)
-    {
-        reasons.push("another package manager is running".into());
+    if !wait_for_package_manager(Path::new("/var/lib/pacman/db.lck"), PACKAGE_MANAGER_WAIT).await {
+        reasons.push("another package manager is still running after 10 minutes".into());
     }
     if power::status().stable() == Some(false) {
         reasons.push("running on battery with low charge".into());
@@ -199,6 +219,7 @@ async fn prepare(run: &mut Run<'_>, policy: &AutoUpdateConfig, packages: Package
         return run.needs_attention(&["no upgrade plan available".into()]);
     };
     if plan.entries.is_empty() {
+        run.op.progress.packages_total = Some(0);
         run.op.summary = "the system is up to date".into();
         run.state(OperationState::Succeeded);
         return 0;

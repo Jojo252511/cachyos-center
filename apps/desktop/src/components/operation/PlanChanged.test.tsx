@@ -29,7 +29,7 @@ function operation(id: string, patch: Partial<Operation>): Operation {
     commitStarted: false,
     confirmedDigest: null,
     actualPlan: null,
-    progress: { currentPackage: null, packagesDone: 0, packagesTotal: null, phaseDetail: null },
+    progress: { currentPackage: null, packagesDone: 0, packagesTotal: null, step: null },
     snapshot: null,
     newPacnewFiles: 0,
     changes: { installed: 0, upgraded: 0, downgraded: 0, reinstalled: 0, removed: 0, packages: [] },

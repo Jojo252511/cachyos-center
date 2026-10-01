@@ -3,8 +3,9 @@ Description=cachyos-center scheduled update check or preparation
 Documentation=https://github.com/Jojo252511/cachyos-center/blob/main/docs/automatische-updates.md
 After=network-online.target
 Wants=network-online.target
-# Never compete with a running package manager.
-ConditionPathExists=!/var/lib/pacman/db.lck
+# A running package manager is never interrupted: the preflight waits with a
+# bounded backoff and otherwise ends as NeedsAttention with the reason (a
+# ConditionPathExists= would skip the run silently).
 
 [Service]
 Type=oneshot

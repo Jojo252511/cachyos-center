@@ -77,7 +77,7 @@ describe('GUI restart during an operation', () => {
       commitStarted: true,
       confirmedDigest: 'c'.repeat(64),
       actualPlan: null,
-      progress: { currentPackage: 'systemd', packagesDone: 4, packagesTotal: 12, phaseDetail: 'installing packages' },
+      progress: { currentPackage: 'systemd', packagesDone: 4, packagesTotal: 12, step: 'applyingChanges' },
       snapshot: null,
       newPacnewFiles: 0,
       changes: { installed: 0, upgraded: 0, downgraded: 0, reinstalled: 0, removed: 0, packages: [] },

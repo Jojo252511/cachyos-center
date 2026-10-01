@@ -65,7 +65,8 @@ fn timer_and_notification_units() {
     assert!(timer.contains("Persistent=true"));
     let service = packaging(&format!("systemd/{}", dbus::PREFLIGHT_SERVICE));
     assert!(service.contains("cachyos-center-helper preflight"));
-    assert!(service.contains("ConditionPathExists=!/var/lib/pacman/db.lck"));
+    // A foreign lock must lead to a visible result, not to a silently skipped run.
+    assert!(!service.contains("ConditionPathExists=!/var/lib/pacman/db.lck"));
     let path = packaging(&format!("systemd/user/{}", dbus::NOTIFY_PATH_UNIT));
     assert!(path.contains(paths::TIMER_STATUS_FILE));
     let notify = packaging("systemd/user/cachyos-center-notify.service");

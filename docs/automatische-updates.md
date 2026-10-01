@@ -21,7 +21,10 @@ weder aktiviert noch mit `-t` angestoßen).
 2. Die Oberfläche aktiviert für den angemeldeten Benutzer `cachyos-center-notify.path`
    (systemd-User-Unit). Sie beobachtet `/var/lib/cachyos-center/timer-status.json` und startet
    `cachyos-center --notify-timer-status`, das genau eine Benachrichtigung pro Timer-Lauf sendet.
-3. Der Timer startet `cachyos-center-helper preflight` (nicht, solange `db.lck` existiert).
+3. Der Timer startet `cachyos-center-helper preflight`. Läuft gerade ein anderer Paketmanager,
+   wartet der Automatikmodus mit begrenztem Backoff bis zu zehn Minuten und endet sonst mit
+   `needsAttention` und Begründung; der Lock wird nie gelöscht. „Nur benachrichtigen“ prüft in
+   einer eigenen Datenbank und braucht den Lock nicht.
 
 ## Preflight (Automatikmodus)
 
@@ -32,7 +35,7 @@ Alle Bedingungen müssen erfüllt sein, sonst wird **nichts** vorbereitet, der L
 - `pacman-offline` installiert, Konfiguration prüfbar, kein aktiver `pacman-offline-prepare.timer`
   (fremder Vorbereitungstimer = „extern verwaltet“)
 - `Include = /etc/pacman.d/offline.conf` ist **nicht** aktiv (siehe „Paketkonsistenz“)
-- kein laufender Paketmanager, kein `db.lck`
+- kein laufender Paketmanager, kein `db.lck` (Wartezeit bis zu zehn Minuten mit begrenztem Backoff)
 - Netzbetrieb oder Akku ≥ 50 % (soweit erkennbar), Netzwerkverbindung vorhanden
 - mindestens 2 GiB frei auf `/` bzw. das Dreifache der Downloadgröße
 - alle News-Feeds abrufbar und keine ungelesenen Arch-/CachyOS-News seit der letzten Bestätigung

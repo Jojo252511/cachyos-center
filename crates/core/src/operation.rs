@@ -148,8 +148,37 @@ pub struct Progress {
     pub packages_done: u32,
     /// Number of packages in the verified plan.
     pub packages_total: Option<u32>,
-    /// Short phase text from pacman (e.g. "checking keyring"), English.
-    pub phase_detail: Option<String>,
+    /// What the helper is doing within the current state.
+    #[serde(default)]
+    pub step: Option<OperationStep>,
+}
+
+/// Step of the helper within a state. Stable identifiers; the UI renders
+/// localized texts.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum OperationStep {
+    /// Waiting for another package manager to release the database lock.
+    WaitingForLock,
+    /// `pacman -Sy`: synchronizing the package databases.
+    SynchronizingDatabases,
+    /// `pacman -Suw`: downloading the packages and verifying their signatures.
+    DownloadingPackages,
+    /// Commit: pacman applies the package changes.
+    ApplyingChanges,
+}
+
+impl OperationStep {
+    /// English description (logs).
+    pub fn describe(self) -> &'static str {
+        match self {
+            Self::WaitingForLock => "waiting for another package manager",
+            Self::SynchronizingDatabases => "synchronizing package databases",
+            Self::DownloadingPackages => "downloading and verifying packages",
+            Self::ApplyingChanges => "applying package changes",
+        }
+    }
 }
 
 /// Package changes of an operation, counted from the pacman log (authoritative).
