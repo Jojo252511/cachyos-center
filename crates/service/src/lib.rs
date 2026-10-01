@@ -51,6 +51,8 @@ pub trait ReadApi: Send + Sync {
     fn installed(&self, query: &InstalledQuery) -> AppResult<PackagePage>;
     fn recent_activity(&self, limit: u32) -> AppResult<Vec<HistoryEntry>>;
     fn health(&self) -> AppResult<HealthReport>;
+    /// Policy and timer status of the app's own scheduled check.
+    fn auto_update(&self) -> AppResult<AutoUpdateStatus>;
     /// Current user settings (e.g. whether the MCP server may answer).
     fn user_settings(&self) -> Settings;
 }
@@ -342,11 +344,11 @@ impl AppCore {
         let updates = self.last_check();
         let settings = self.settings();
         let next_check_at = (settings.check_interval_hours > 0).then(|| {
-            let base = updates
-                .attempted_at
-                .or(updates.checked_at)
-                .unwrap_or_else(now);
-            base + i64::from(settings.check_interval_hours) * 3600
+            next_check(
+                updates.attempted_at.or(updates.checked_at),
+                settings.check_interval_hours,
+                now(),
+            )
         });
         let last_activity = self.activity(1).into_iter().next();
         Dashboard {
@@ -439,6 +441,16 @@ pub fn new_id() -> String {
     )
 }
 
+/// When the GUI checks next: like its background loop, which checks shortly
+/// after the start and then every minute whether the interval has passed.
+/// Never checked or overdue means "now", never a time in the past.
+fn next_check(last: Option<Timestamp>, interval_hours: u32, now: Timestamp) -> Timestamp {
+    match last {
+        None => now,
+        Some(t) => (t + i64::from(interval_hours) * 3600).max(now),
+    }
+}
+
 impl ReadApi for AppCore {
     fn system_summary(&self) -> AppResult<SystemSummary> {
         Ok(self.system_info().summary())
@@ -464,6 +476,10 @@ impl ReadApi for AppCore {
         Ok(self.health_report())
     }
 
+    fn auto_update(&self) -> AppResult<AutoUpdateStatus> {
+        Ok(self.auto_update_status())
+    }
+
     fn user_settings(&self) -> Settings {
         self.settings()
     }
@@ -472,6 +488,13 @@ impl ReadApi for AppCore {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn next_check_is_never_in_the_past() {
+        assert_eq!(next_check(None, 6, 1_000), 1_000);
+        assert_eq!(next_check(Some(1_000), 6, 2_000), 1_000 + 6 * 3600);
+        assert_eq!(next_check(Some(1_000), 1, 100_000), 100_000);
+    }
 
     #[test]
     fn ids_are_valid_uuids() {

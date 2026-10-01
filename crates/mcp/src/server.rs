@@ -24,14 +24,14 @@ use crate::args::{
     PackagesSearchArguments, parse,
 };
 use crate::output::{
-    HealthOutput, McpErrorCode, OperationsRecentOutput, PackagesInstalledOutput,
+    AutoUpdateOutput, HealthOutput, McpErrorCode, OperationsRecentOutput, PackagesInstalledOutput,
     PackagesSearchOutput, SystemSummaryOutput, ToolErrorBody, UpdatesListOutput,
 };
 use crate::render::{RenderError, Rendered, error_result, render, scrub_text, success_result};
 use crate::tools::{ToolKind, definitions};
 
 /// Message of every tool call while MCP access is switched off.
-pub const DISABLED_MESSAGE: &str = "MCP access is disabled in cachyos-center (Settings → KI/MCP)";
+pub const DISABLED_MESSAGE: &str = "MCP access is disabled in cachyos-center (Einstellungen → KI-Zugriff (MCP) / Settings → AI access (MCP))";
 
 /// Maximum time for one tool call (including waiting for a free slot).
 pub const TOOL_TIMEOUT: Duration = Duration::from_secs(15);
@@ -50,7 +50,8 @@ update check, operation history, health checks). No tool changes the system, ins
 or removes packages, runs an update check or uses the network. updates_list returns the result of \
 the last update check made by cachyos-center, which may be stale: check `status`, `stale`, \
 `ageSeconds` and `note` before calling it the current state. Access must be enabled by the user \
-in cachyos-center (Settings → KI/MCP); otherwise every tool returns the error code UNAVAILABLE. \
+in cachyos-center (Einstellungen → KI-Zugriff (MCP) / Settings → AI access (MCP)); otherwise every \
+tool returns the error code UNAVAILABLE. \
 Outputs are sanitized (home paths, user and host names are masked) and limited to 64 KiB \
 (`truncated` is then true).";
 
@@ -326,7 +327,9 @@ fn execute(
         }
         ToolKind::HealthGet => {
             parse::<NoArguments>(arguments)?;
-            render(HealthOutput::from(api.health()?), ctx, mask, max)
+            let mut output = HealthOutput::from(api.health()?);
+            output.auto_update = api.auto_update().ok().map(AutoUpdateOutput::from);
+            render(output, ctx, mask, max)
         }
     };
     Ok(rendered?)

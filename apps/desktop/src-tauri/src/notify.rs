@@ -89,9 +89,9 @@ pub fn operation_texts(op: &Operation, de: bool) -> (Kind, String, String) {
                 format!("{what} cancelled")
             },
             if de {
-                "Es wurde nichts geändert.".to_string()
+                "Die installierten Pakete sind unverändert.".to_string()
             } else {
-                "Nothing was changed.".to_string()
+                "The installed packages are unchanged.".to_string()
             },
         ),
         _ => (

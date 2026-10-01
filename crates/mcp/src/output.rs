@@ -10,6 +10,7 @@
 use cachyos_center_core::health::HealthReport;
 use cachyos_center_core::history::HistoryEntry;
 use cachyos_center_core::package::{PackagePage, PackageSummary};
+use cachyos_center_core::policy::AutoUpdateStatus;
 use cachyos_center_core::system::{LockStatus, SystemSummary};
 use cachyos_center_core::updates::{
     CheckStatus, STALE_AFTER_SECS, UpdateCandidate, UpdateCheckResult,
@@ -714,8 +715,39 @@ pub struct HealthOutput {
     /// Size of the package cache in bytes, if known.
     pub package_cache_bytes: Option<u64>,
     pub snapshot: SnapshotOutput,
+    /// The app's own scheduled check (`cachyos-center-preflight.timer`), if readable.
+    pub auto_update: Option<AutoUpdateOutput>,
     pub collected_at: Timestamp,
     pub truncated: bool,
+}
+
+/// Policy and timer of the app's own scheduled check.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AutoUpdateOutput {
+    /// `off`, `notifyOnly` or `prepareForNextReboot` (in development, locked by default).
+    pub policy: String,
+    /// `cachyos-center-preflight.timer` is enabled.
+    pub timer_enabled: bool,
+    pub next_run: Option<Timestamp>,
+    pub last_run: Option<Timestamp>,
+    /// State of the last timer run (e.g. `succeeded`, `failed`, `needsAttention`).
+    pub last_result_state: Option<String>,
+    /// An update is prepared and will be installed on the next reboot.
+    pub prepared_for_next_reboot: bool,
+}
+
+impl From<AutoUpdateStatus> for AutoUpdateOutput {
+    fn from(s: AutoUpdateStatus) -> Self {
+        Self {
+            policy: s.config.policy.as_str().to_string(),
+            timer_enabled: s.timer_enabled,
+            next_run: s.next_run,
+            last_run: s.last_run,
+            last_result_state: s.last_result.as_ref().map(|op| wire(&op.state)),
+            prepared_for_next_reboot: s.prepared_for_next_reboot,
+        }
+    }
 }
 
 impl From<HealthReport> for HealthOutput {
@@ -770,6 +802,7 @@ impl From<HealthReport> for HealthOutput {
                 snap_pac_active: r.snapshot.snap_pac_active,
                 can_request_snapshot: r.snapshot.can_request_snapshot,
             },
+            auto_update: None,
             collected_at: r.collected_at,
             truncated: false,
         }

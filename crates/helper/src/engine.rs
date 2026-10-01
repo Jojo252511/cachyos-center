@@ -398,7 +398,7 @@ impl Engine {
             Err(Stop::Cancelled) => {
                 self.with_op(&id, |op| {
                     if !op.state.is_terminal() {
-                        op.summary = "cancelled before the commit; nothing was changed".into();
+                        op.summary = "cancelled before the commit; no package was changed".into();
                         let _ = op.transition(OperationState::CancelledBeforeCommit, now());
                     }
                 });

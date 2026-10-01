@@ -22,7 +22,7 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 
 const BINARY: &str = env!("CARGO_BIN_EXE_cachyos-center-mcp");
-const DISABLED: &str = "MCP access is disabled in cachyos-center (Settings → KI/MCP)";
+const DISABLED: &str = "MCP access is disabled in cachyos-center (Einstellungen → KI-Zugriff (MCP) / Settings → AI access (MCP))";
 
 /// Temporary XDG directories of one server process.
 struct UserDirs {
@@ -418,7 +418,12 @@ fn version_and_help() {
         .expect("run --help");
     assert!(output.status.success());
     let help = String::from_utf8_lossy(&output.stdout);
-    for fragment in ["read-only", "stdin/stdout", "KI/MCP", "CACHYOS_CENTER_LOG"] {
+    for fragment in [
+        "read-only",
+        "stdin/stdout",
+        "KI-Zugriff (MCP)",
+        "CACHYOS_CENTER_LOG",
+    ] {
         assert!(help.contains(fragment), "{fragment}: {help}");
     }
     assert!(Path::new(BINARY).is_file());

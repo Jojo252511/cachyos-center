@@ -24,17 +24,17 @@ Updateprüfung, Pakete, letzte Paketvorgänge und Gesundheitszustand. Er ändert
 
 Der Zugriff ist **standardmäßig deaktiviert** (`mcpEnabled = false` in
 `$XDG_CONFIG_HOME/cachyos-center/settings.toml`). Aktivieren in cachyos-center unter
-**Einstellungen → „KI/MCP“**.
+**Einstellungen → „KI-Zugriff (MCP)“**.
 
 Solange der Zugriff deaktiviert ist, startet der Server trotzdem, beantwortet `initialize` und
 listet seine Tools; jeder Tool-Aufruf liefert aber ein Fehlerergebnis mit Code `UNAVAILABLE` und
-der Meldung `MCP access is disabled in cachyos-center (Settings → KI/MCP)`. Die Einstellung wird
+der Meldung `MCP access is disabled in cachyos-center (Einstellungen → KI-Zugriff (MCP) / Settings → AI access (MCP))`. Die Einstellung wird
 bei jedem Aufruf neu gelesen: Ein- und Ausschalten wirkt sofort, ohne den Host neu zu starten.
 
 ## Einrichtung im MCP-Host
 
 Die Registrierung im Host nimmt der Nutzer selbst vor; cachyos-center schreibt in keine
-Konfigurationsdatei eines Hosts. Die Einstellungsseite „KI/MCP“ zeigt die passende Konfiguration
+Konfigurationsdatei eines Hosts. Der Einstellungsbereich „KI-Zugriff (MCP)“ zeigt die passende Konfiguration
 zum Kopieren an. Sie entspricht der Ausgabe von
 `cachyos_center_core::mcp::host_config("/usr/bin/cachyos-center-mcp")`:
 
@@ -87,7 +87,7 @@ Beschreibungen, die mit „Read-only.“ beginnen, und weisen unbekannte Argumen
 | `packages_search` | `query` (Text, 2–100 Zeichen, Pflicht), `limit` (1–50, Standard 20) | Treffer aus den konfigurierten pacman-Repositories mit Repository, Version, installierter Version, Beschreibung | keine AUR- oder Websuche |
 | `packages_installed` | `query` (optional, ≤ 100 Zeichen), `limit` (1–100, Standard 50), `cursor` (optional, opak, ≤ 64 Zeichen) | installierte Pakete mit Version, Herkunft (`repo` oder `localOrAur`), Installationsgrund, Updateverfügbarkeit; `total`, `offset`, `nextCursor` | seitenweise; ein Cursor gilt nur zusammen mit derselben `query` |
 | `operations_recent` | `limit` (1–20, Standard 10) | bereinigte Zusammenfassungen der letzten Vorgänge (App, Timer, externe pacman-Läufe): Art, Zustand bzw. Ergebnis, Zeiten, Anzahl geänderter Pakete, bis zu 20 Paketnamen, Fehlercode | keine Rohlogs, keine Dateipfade |
-| `health_get` | – | Anzahl `.pacnew`/`.pacsave`, Zustand des Datenbank-Locks, Neustartempfehlung mit Gründen, vorbereitetes Offline-Update und Timer, andere Update-Mechanismen (Unit-Namen), Gründe gegen unbeaufsichtigte Updates (`updateBlockers`), Hinweise mit Art, Schweregrad und kurzem Detail, Snapshot-Unterstützung, Größe des Paketcaches | keine Dateiinhalte, keine Dateipfade (insbesondere nicht die Pfade der `.pacnew`-Dateien) |
+| `health_get` | – | Anzahl `.pacnew`/`.pacsave`, Zustand des Datenbank-Locks, Neustartempfehlung mit Gründen, vorbereitetes Offline-Update und Timer, andere Update-Mechanismen (Unit-Namen), Gründe gegen unbeaufsichtigte Updates (`updateBlockers`), eigener Auto-Update-Timer (`autoUpdate`: Richtlinie, Timer aktiv, nächster und letzter Lauf, Zustand des letzten Laufs, vorbereitetes Update), Hinweise mit Art, Schweregrad und kurzem Detail, Snapshot-Unterstützung, Größe des Paketcaches | keine Dateiinhalte, keine Dateipfade (insbesondere nicht die Pfade der `.pacnew`-Dateien) |
 
 Konventionen der Ausgaben: Feldnamen in camelCase, Zeitpunkte in Unix-Sekunden (UTC), Größen in
 Bytes, Aufzählungen als camelCase-Strings des Kernmodells (z. B. `neverChecked`, `localOrAur`).

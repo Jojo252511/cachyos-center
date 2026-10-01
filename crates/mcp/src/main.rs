@@ -23,7 +23,8 @@ updates_list, packages_search, packages_installed, operations_recent and
 health_get.
 
 Access is disabled by default. Enable it in cachyos-center under
-Einstellungen -> KI/MCP; while it is disabled every tool call returns the
+Einstellungen -> KI-Zugriff (MCP) (English UI: Settings -> AI access (MCP));
+while it is disabled every tool call returns the
 error code UNAVAILABLE.
 
 Logs are written to stderr; the level is set with CACHYOS_CENTER_LOG

@@ -162,8 +162,12 @@ pub fn open(config: &AlpmConfig) -> AppResult<Alpm> {
         db.set_usage(usage_of(&repo.usage))
             .map_err(|e| alpm_err("cannot set Usage", e))?;
     }
-    // Answer questions exactly like `pacman --noconfirm` does, so that a plan
-    // matches what the helper's non-interactive pacman run will do.
+    // Answer the questions that shape a plan (ignored packages, replacements,
+    // conflicts, removals, providers) like `pacman --noconfirm`, so that the
+    // plan matches the helper's non-interactive pacman run. Planning never
+    // downloads, so corrupted packages and key imports cannot come up here;
+    // they are declined because the bridge must never delete files or import
+    // keys (pacman itself decides about them during the real transaction).
     alpm.set_question_cb((), |mut question, _| match question.question() {
         Question::InstallIgnorepkg(mut q) => q.set_install(true),
         Question::Replace(q) => q.set_replace(true),

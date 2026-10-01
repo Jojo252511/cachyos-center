@@ -10,11 +10,14 @@ use cachyos_center_core::health::{
 };
 use cachyos_center_core::history::{HistoryEntry, HistorySource, LogOutcome};
 use cachyos_center_core::mcp::{SERVER_NAME, TOOL_NAMES};
+use cachyos_center_core::operation::{Operation, OperationKind, OperationOrigin, OperationState};
 use cachyos_center_core::package::{
     CatalogQuery, InstallReason, InstalledQuery, PackageId, PackageOrigin, PackagePage,
     PackageSummary,
 };
-use cachyos_center_core::policy::{ExternalUpdater, OfflineUpdateStatus};
+use cachyos_center_core::policy::{
+    AutoUpdateConfig, AutoUpdatePolicy, AutoUpdateStatus, ExternalUpdater, OfflineUpdateStatus,
+};
 use cachyos_center_core::sanitize::SanitizeContext;
 use cachyos_center_core::settings::Settings;
 use cachyos_center_core::system::{LockStatus, SessionKind, SystemSummary};
@@ -150,6 +153,33 @@ impl ReadApi for FakeReadApi {
     fn health(&self) -> AppResult<HealthReport> {
         self.enter()?;
         Ok(self.health.clone())
+    }
+
+    fn auto_update(&self) -> AppResult<AutoUpdateStatus> {
+        let mut last = Operation::new(
+            "66666666-6666-4666-8666-666666666666".into(),
+            OperationKind::UpdateCheck,
+            OperationOrigin::Timer,
+            900,
+        );
+        last.state = OperationState::Succeeded;
+        Ok(AutoUpdateStatus {
+            config: AutoUpdateConfig {
+                policy: AutoUpdatePolicy::NotifyOnly,
+                ..AutoUpdateConfig::default()
+            },
+            config_error: None,
+            timer_enabled: true,
+            next_run: Some(2_000),
+            last_run: Some(900),
+            last_result: Some(last),
+            prepared_for_next_reboot: false,
+            offline: OfflineUpdateStatus::default(),
+            external_updaters: vec![],
+            prepare_mode_available: false,
+            prepare_mode_blockers: vec!["experimentalLocked".into()],
+            helper_available: true,
+        })
     }
 
     fn user_settings(&self) -> Settings {
@@ -630,6 +660,17 @@ async fn health_contains_counts_but_no_paths() {
     assert_eq!(
         value["updateBlockers"],
         json!(["package manager is busy (db.lck)"])
+    );
+    assert_eq!(
+        value["autoUpdate"],
+        json!({
+            "policy": "notifyOnly",
+            "timerEnabled": true,
+            "nextRun": 2000,
+            "lastRun": 900,
+            "lastResultState": "succeeded",
+            "preparedForNextReboot": false
+        })
     );
     assert_eq!(value["items"][0]["kind"], "packageBackendUnavailable");
     assert_eq!(value["items"][2]["detail"], "cannot write <path> on <host>");
