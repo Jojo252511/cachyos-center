@@ -21,7 +21,7 @@ Benutzername, Pfade) sind bewusst nicht enthalten.
 | Update-Dienste | keine `arch-update`/Cachy-Update-Units, `pacman-offline` nicht installiert, kein `/system-update` | Keine Kollision; Automatikmodus bleibt auf diesem System ohnehin gesperrt |
 | Snapshots | Root-Dateisystem Btrfs, snapper mit Konfiguration `root`, `snap-pac` aktiv | pacman erzeugt bereits Pre-/Post-Snapshots; cachyos-center zeigt das an |
 | Rust | rustc/cargo 1.98.1 (Arch-Paket) | Edition 2024, MSRV im Workspace 1.89 |
-| Node.js | `nodejs` 26.10.0 startet nicht: `libsimdjson.so.33` fehlt, installiert ist `simdjson` 5.0.1 (`.so.34`) | Lokaler Entwicklungs-Workaround über `LD_LIBRARY_PATH`; am System wurde nichts geändert |
+| Node.js | `nodejs` 26.10.0-1 startete nicht: `libsimdjson.so.33` fehlte, installiert war `simdjson` 5.0.1 (`.so.34`). Mit `nodejs` 26.10.0-2 (Stand 2026-10-01) behoben | Bis dahin lokaler Entwicklungs-Workaround über `LD_LIBRARY_PATH`; am System wurde nichts geändert |
 
 ## Abweichungen vom Konzept und Folgen
 
