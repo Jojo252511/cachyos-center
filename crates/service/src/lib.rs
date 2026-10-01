@@ -148,8 +148,46 @@ impl AppCore {
         cachyos_center_system::hyprland::info()
     }
 
+    /// Result of the last update check. A package operation that failed or
+    /// needs attention *after* that check makes the result stale: the app must
+    /// never show "System aktuell" after a failed transaction without a new check.
     pub fn last_check(&self) -> UpdateCheckResult {
-        self.packages.last_check()
+        let mut result = self.packages.last_check();
+        if let Some(op) = self.failed_operation_after(result.checked_at) {
+            if result.status == CheckStatus::Fresh {
+                result.status = CheckStatus::Stale;
+            }
+            result.error = Some(AppError::new(
+                ErrorCode::Stale,
+                format!(
+                    "a package operation ended with state {:?} after the last check; run a new check",
+                    op.state
+                ),
+            ));
+        }
+        result
+    }
+
+    /// Most recent package operation that ended unsuccessfully after `since`.
+    fn failed_operation_after(&self, since: Option<Timestamp>) -> Option<Operation> {
+        let since = since?;
+        self.recent_operations(20)
+            .into_iter()
+            .filter(|o| {
+                matches!(
+                    o.kind,
+                    OperationKind::SystemUpgrade | OperationKind::Install | OperationKind::Remove
+                )
+            })
+            .filter(|o| o.ended_at.is_some_and(|e| e >= since))
+            .max_by_key(|o| o.ended_at.unwrap_or(0))
+            .filter(|o| {
+                o.commit_started
+                    && matches!(
+                        o.state,
+                        OperationState::Failed | OperationState::NeedsAttention
+                    )
+            })
     }
 
     /// Runs an update check (network) and records it in the history.
@@ -269,7 +307,7 @@ impl AppCore {
         let log = self.packages.log_summary().ok();
         let ops = self.recent_operations(20);
         let backend = self.packages.backend_status();
-        let check = self.packages.last_check();
+        let check = self.last_check();
         let news = self.news(false, false);
         let cache_dirs = self
             .packages
@@ -301,7 +339,7 @@ impl AppCore {
     pub fn dashboard(&self) -> Dashboard {
         let system = self.system_info();
         let health = self.health_report();
-        let updates = self.packages.last_check();
+        let updates = self.last_check();
         let settings = self.settings();
         let next_check_at = (settings.check_interval_hours > 0).then(|| {
             let base = updates
@@ -332,7 +370,7 @@ impl AppCore {
     pub fn diagnostic_report(&self) -> String {
         let system = self.system_info();
         let health = self.health_report();
-        let updates = self.packages.last_check();
+        let updates = self.last_check();
         let auto = self.auto_update_status();
         let activity = self.activity(10);
         diagnostic::build(
@@ -407,7 +445,7 @@ impl ReadApi for AppCore {
     }
 
     fn updates(&self) -> AppResult<UpdateCheckResult> {
-        Ok(self.packages.last_check())
+        Ok(self.last_check())
     }
 
     fn search(&self, query: &CatalogQuery) -> AppResult<Vec<PackageSummary>> {

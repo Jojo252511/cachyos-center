@@ -102,3 +102,47 @@ fn settings_and_news_ack_are_stored_in_user_dirs() {
             .exists()
     );
 }
+
+#[test]
+fn failed_transaction_after_check_makes_status_stale() {
+    use cachyos_center_core::operation::{
+        Operation, OperationKind, OperationOrigin, OperationState,
+    };
+    use cachyos_center_core::updates::CheckStatus;
+    let dir = tempfile::tempdir().unwrap();
+    let Some(core) = core(dir.path()) else { return };
+    // Simulate a successful check right now: the isolated database points to
+    // the (read-only) system databases.
+    let check_db = core.dirs().check_db();
+    std::fs::create_dir_all(&check_db).unwrap();
+    std::os::unix::fs::symlink("/var/lib/pacman/sync", check_db.join("sync")).unwrap();
+    std::os::unix::fs::symlink("/var/lib/pacman/local", check_db.join("local")).unwrap();
+    let before = core.last_check();
+    if before.status == CheckStatus::Unsupported {
+        return;
+    }
+    let state = cachyos_center_packages::check::CheckState {
+        checked_at: Some(cachyos_center_core::now() - 10),
+        attempted_at: Some(cachyos_center_core::now() - 10),
+        error: None,
+    };
+    state.save(&core.dirs().check_state()).unwrap();
+    // A failed upgrade after the check (commit had started).
+    let mut op = Operation::new(
+        "55555555-5555-4555-8555-555555555555".into(),
+        OperationKind::SystemUpgrade,
+        OperationOrigin::User,
+        cachyos_center_core::now() - 5,
+    );
+    op.state = OperationState::NeedsAttention;
+    op.commit_started = true;
+    op.ended_at = Some(cachyos_center_core::now());
+    core.history().record(&op).unwrap();
+    assert_eq!(core.last_check().status, CheckStatus::Stale);
+    let result = core.last_check();
+    assert_ne!(result.status, CheckStatus::Fresh, "{result:?}");
+    assert_eq!(
+        result.error.map(|e| e.code),
+        Some(cachyos_center_core::ErrorCode::Stale)
+    );
+}
