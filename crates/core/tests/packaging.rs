@@ -42,10 +42,20 @@ fn polkit_actions_exist_without_blanket_rules() {
         policy.matches("<action id=").count(),
         dbus::actions::ALL.len()
     );
-    assert!(
-        !policy.contains("<allow_active>yes</allow_active>"),
-        "no action may be granted without authentication"
-    );
+    // Only cancelling one's own operation (which never changes the system) is
+    // granted to active local sessions without authentication.
+    for block in policy.split("<action id=").skip(1) {
+        if block.contains("<allow_active>yes</allow_active>") {
+            assert!(
+                block.starts_with(&format!("\"{}\"", dbus::actions::CANCEL)),
+                "only the cancel action may be granted without authentication"
+            );
+        }
+        assert!(
+            block.contains("<allow_inactive>no</allow_inactive>"),
+            "{block}"
+        );
+    }
     assert!(!policy.contains("<allow_any>yes"));
 }
 

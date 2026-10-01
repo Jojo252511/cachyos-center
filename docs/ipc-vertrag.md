@@ -57,7 +57,7 @@ Der Upgrade-Plan steht in `UpdateCheckResult.plan`. `TransactionPlan.targets` en
 | `start_install` | `repository: string, name: string, planDigest: string` | `string` | `pacman -Syu --needed repo/name` |
 | `start_remove` | `name: string, recursive: boolean, planDigest: string` | `string` | nur Repository-Pakete; `pacman -R` bzw. `-Rs` |
 | `set_auto_update_policy` | `config: AutoUpdateConfig` | `AutoUpdateStatus` | Polkit-Aktion `org.cachyos-center.autoupdate.configure` |
-| `cancel_operation` | `id: string` | `Operation` | nur vor dem Commit (`OperationState.canCancel`), sonst `INVALID_INPUT` |
+| `cancel_operation` | `id: string` | `Operation` | nur vor dem Commit (`OperationState.canCancel`), sonst `INVALID_INPUT`; Polkit-Aktion `org.cachyos-center.packages.cancel` (aktive Sitzung ohne Passwort) |
 
 Fehler dieser Commands: `UNAVAILABLE` (Helper nicht installiert/erreichbar), `BUSY` (anderer Vorgang
 oder fremder `db.lck`), `CONFLICT` (vorbereitetes Offline-Update), `INVALID_INPUT`, `NOT_AUTHORIZED`

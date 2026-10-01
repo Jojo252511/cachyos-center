@@ -352,27 +352,33 @@ impl Engine {
                 "the operation can no longer be cancelled (commit phase or finished)",
             ));
         }
+        // Every call is checked with polkit for the actual bus sender. The
+        // initiator cancels with the dedicated action (active local sessions,
+        // no password: cancelling never changes the system); anybody else
+        // needs the authorization of the operation itself.
         let same_user = caller.uid.is_some() && caller.uid == uid;
-        if !same_user && caller.uid != Some(0) {
-            let action = match kind {
+        let action = if same_user {
+            actions::CANCEL
+        } else {
+            match kind {
                 OperationKind::Install => actions::INSTALL,
                 OperationKind::Remove => actions::REMOVE,
                 _ => actions::UPGRADE,
-            };
-            let conn = self
-                .bus
-                .get()
-                .ok_or_else(|| AppError::unavailable("no bus connection"))?;
-            authz::authorize(
-                &self.config.auth,
-                conn,
-                caller,
-                action,
-                &format!("cancel-{id}"),
-                self.config.auth_timeout,
-            )
-            .await?;
-        }
+            }
+        };
+        let conn = self
+            .bus
+            .get()
+            .ok_or_else(|| AppError::unavailable("no bus connection"))?;
+        authz::authorize(
+            &self.config.auth,
+            conn,
+            caller,
+            action,
+            &format!("cancel-{id}"),
+            self.config.auth_timeout,
+        )
+        .await?;
         flag.cancel();
         if state == OperationState::AwaitingAuthorization
             && let Some(conn) = self.bus.get()

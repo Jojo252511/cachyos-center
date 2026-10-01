@@ -44,8 +44,15 @@ enum Cmd {
         #[arg(long, requires = "dev_root")]
         pacman_log: Option<PathBuf>,
         /// Development mode: deny these polkit actions (all others are allowed).
-        #[arg(long, requires = "dev_root")]
+        #[arg(long, requires = "dev_root", conflicts_with = "polkit")]
         deny: Vec<String>,
+        /// Development mode: ask the polkit authority on the development bus
+        /// (tests with a fake authority) instead of the built-in test decision.
+        #[arg(long, requires = "dev_root")]
+        polkit: bool,
+        /// Development mode: maximum time for a polkit check in seconds.
+        #[arg(long, requires = "dev_root")]
+        auth_timeout_secs: Option<u64>,
         /// Development mode: maximum wait for a foreign pacman lock in seconds.
         #[arg(long, requires = "dev_root")]
         lock_wait_secs: Option<u64>,
@@ -93,6 +100,8 @@ fn main() -> ExitCode {
         fakeroot: false,
         pacman_log: None,
         deny: Vec::new(),
+        polkit: false,
+        auth_timeout_secs: None,
         lock_wait_secs: None,
         idle_secs: None,
     }) {
@@ -103,6 +112,8 @@ fn main() -> ExitCode {
             fakeroot,
             pacman_log,
             deny,
+            polkit,
+            auth_timeout_secs,
             lock_wait_secs,
             idle_secs,
         } => {
@@ -128,7 +139,14 @@ fn main() -> ExitCode {
                         c.pacman_log = l;
                     }
                     c.fakeroot = fakeroot;
-                    c.auth = AuthMode::TestDeny(deny);
+                    c.auth = if polkit {
+                        AuthMode::Polkit
+                    } else {
+                        AuthMode::TestDeny(deny)
+                    };
+                    if let Some(secs) = auth_timeout_secs {
+                        c.auth_timeout = std::time::Duration::from_secs(secs);
+                    }
                     if let Some(secs) = lock_wait_secs {
                         c.lock_wait = std::time::Duration::from_secs(secs);
                     }

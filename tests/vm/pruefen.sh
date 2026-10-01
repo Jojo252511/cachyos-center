@@ -26,7 +26,7 @@ check "libalpm-Bridge installiert" test -f /usr/lib/cachyos-center/libcachyos_ce
 check "Bridge findet libalpm" bash -c "ldd /usr/lib/cachyos-center/libcachyos_center_alpm.so | grep -q 'libalpm.so'"
 check "Programme linken libalpm nicht direkt" bash -c "! ldd /usr/bin/cachyos-center /usr/bin/cachyos-center-mcp /usr/lib/cachyos-center/cachyos-center-helper | grep -q libalpm"
 check "D-Bus-Aktivierung registriert" bash -c "busctl --system list --activatable | grep -q org.cachyos_center.Packages1"
-for a in org.cachyos-center.packages.upgrade org.cachyos-center.packages.install org.cachyos-center.packages.remove org.cachyos-center.autoupdate.configure; do
+for a in org.cachyos-center.packages.upgrade org.cachyos-center.packages.install org.cachyos-center.packages.remove org.cachyos-center.autoupdate.configure org.cachyos-center.packages.cancel; do
   check "Polkit-Aktion $a" pkaction --action-id "$a"
 done
 check "Keine Polkit-Regel für cachyos-center" bash -c "! grep -rl cachyos /etc/polkit-1/rules.d /usr/share/polkit-1/rules.d 2>/dev/null"

@@ -10,13 +10,14 @@
 //! libalpm bridge in the target directory (`cargo build --workspace`). Missing
 //! requirements skip the tests unless `CC_REQUIRE_SANDBOX=1` is set (CI).
 
+use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
-use std::sync::OnceLock;
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
-use cachyos_center_core::dbus::{BUS_NAME, INTERFACE, OBJECT_PATH, app_error_from_dbus};
+use cachyos_center_core::dbus::{BUS_NAME, INTERFACE, OBJECT_PATH, actions, app_error_from_dbus};
 use cachyos_center_core::operation::{Operation, OperationState};
 use cachyos_center_core::plan::TransactionPlan;
 use cachyos_center_core::ui::OperationLogChunk;
@@ -443,6 +444,8 @@ impl Drop for Helper {
 
 struct Client {
     proxy: zbus::Proxy<'static>,
+    /// Unique bus name of the client connection (the polkit subject).
+    name: String,
 }
 
 impl Client {
@@ -471,7 +474,8 @@ impl Client {
         let proxy = zbus::Proxy::new(&conn, BUS_NAME, OBJECT_PATH, INTERFACE)
             .await
             .expect("proxy");
-        Self { proxy }
+        let name = conn.unique_name().expect("unique name").to_string();
+        Self { proxy, name }
     }
 
     fn map_err(e: zbus::Error) -> AppError {
@@ -500,6 +504,16 @@ impl Client {
     async fn remove(&self, name: &str, recursive: bool, digest: &str) -> Result<String, AppError> {
         self.proxy
             .call("RemoveRepoPackage", &(name, recursive, digest))
+            .await
+            .map_err(Self::map_err)
+    }
+
+    async fn set_policy(&self, policy: &str) -> Result<(), AppError> {
+        self.proxy
+            .call(
+                "SetAutoUpdatePolicy",
+                &(policy, 0b0100_0001u8, "09:30", false, -1i64),
+            )
             .await
             .map_err(Self::map_err)
     }
@@ -909,4 +923,336 @@ async fn invalid_input_is_rejected_synchronously() {
     assert_eq!(unknown.code, ErrorCode::NotFound);
     let bad = client.status("../../etc/passwd").await.expect_err("bad id");
     assert_eq!(bad.code, ErrorCode::InvalidInput);
+}
+
+// ---------------------------------------------------------------------------
+// Polkit: real authorization code path against a fake authority
+// ---------------------------------------------------------------------------
+
+/// Answer of the fake authority for one action.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Decision {
+    Allow,
+    Deny,
+    /// Authentication would be needed but no agent answered.
+    Challenge,
+    /// Like polkitd while an agent dialog is open: answers only when cancelled.
+    Hang,
+}
+
+#[derive(Debug, Clone)]
+struct CheckCall {
+    subject_kind: String,
+    subject_name: Option<String>,
+    action: String,
+    flags: u32,
+    cancellation_id: String,
+}
+
+#[derive(Default)]
+struct AuthorityState {
+    decisions: HashMap<String, Decision>,
+    calls: Vec<CheckCall>,
+    cancelled: Vec<String>,
+}
+
+#[derive(Debug, zbus::DBusError)]
+#[zbus(prefix = "org.freedesktop.PolicyKit1.Error")]
+enum PolkitError {
+    #[zbus(error)]
+    ZBus(zbus::Error),
+    Cancelled(String),
+}
+
+/// `org.freedesktop.PolicyKit1.Authority` on the private test bus.
+struct FakeAuthority {
+    state: Arc<Mutex<AuthorityState>>,
+    release: Arc<tokio::sync::Notify>,
+}
+
+#[zbus::interface(name = "org.freedesktop.PolicyKit1.Authority")]
+impl FakeAuthority {
+    async fn check_authorization(
+        &self,
+        subject: zbus_polkit::policykit1::Subject,
+        action_id: String,
+        _details: HashMap<String, String>,
+        flags: u32,
+        cancellation_id: String,
+    ) -> Result<zbus_polkit::policykit1::AuthorizationResult, PolkitError> {
+        let subject_name = subject
+            .subject_details
+            .get("name")
+            .and_then(|v| <&str>::try_from(v).ok())
+            .map(str::to_string);
+        let decision = {
+            let mut state = self.state.lock().expect("authority state");
+            state.calls.push(CheckCall {
+                subject_kind: subject.subject_kind.clone(),
+                subject_name,
+                action: action_id.clone(),
+                flags,
+                cancellation_id,
+            });
+            state
+                .decisions
+                .get(&action_id)
+                .copied()
+                .unwrap_or(Decision::Allow)
+        };
+        let result = |is_authorized, is_challenge| zbus_polkit::policykit1::AuthorizationResult {
+            is_authorized,
+            is_challenge,
+            details: HashMap::new(),
+        };
+        match decision {
+            Decision::Allow => Ok(result(true, false)),
+            Decision::Deny => Ok(result(false, false)),
+            Decision::Challenge => Ok(result(false, true)),
+            Decision::Hang => {
+                let _ =
+                    tokio::time::timeout(Duration::from_secs(60), self.release.notified()).await;
+                Err(PolkitError::Cancelled(
+                    "the authentication dialog was dismissed".into(),
+                ))
+            }
+        }
+    }
+
+    async fn cancel_check_authorization(&self, cancellation_id: String) {
+        self.state
+            .lock()
+            .expect("authority state")
+            .cancelled
+            .push(cancellation_id);
+        self.release.notify_waiters();
+    }
+}
+
+struct Authority {
+    state: Arc<Mutex<AuthorityState>>,
+    _conn: zbus::Connection,
+}
+
+impl Authority {
+    async fn start(bus: &Bus) -> Self {
+        let state = Arc::new(Mutex::new(AuthorityState::default()));
+        let fake = FakeAuthority {
+            state: state.clone(),
+            release: Arc::new(tokio::sync::Notify::new()),
+        };
+        let conn = zbus::connection::Builder::address(bus.address.as_str())
+            .expect("address")
+            .serve_at("/org/freedesktop/PolicyKit1/Authority", fake)
+            .expect("serve authority")
+            .name("org.freedesktop.PolicyKit1")
+            .expect("authority name")
+            .build()
+            .await
+            .expect("authority connection");
+        Self { state, _conn: conn }
+    }
+
+    fn decide(&self, action: &str, decision: Decision) {
+        self.state
+            .lock()
+            .expect("authority state")
+            .decisions
+            .insert(action.to_string(), decision);
+    }
+
+    fn calls(&self) -> Vec<CheckCall> {
+        self.state.lock().expect("authority state").calls.clone()
+    }
+
+    fn cancelled(&self) -> Vec<String> {
+        self.state
+            .lock()
+            .expect("authority state")
+            .cancelled
+            .clone()
+    }
+
+    async fn wait_for_call(&self, action: &str) -> CheckCall {
+        let deadline = Instant::now() + Duration::from_secs(15);
+        loop {
+            if let Some(call) = self.calls().into_iter().rev().find(|c| c.action == action) {
+                return call;
+            }
+            assert!(Instant::now() < deadline, "no polkit check for {action}");
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+    }
+}
+
+/// Subject of every check: the unique bus name of the actual caller.
+fn assert_caller_subject(call: &CheckCall, client: &Client) {
+    assert_eq!(call.subject_kind, "system-bus-name", "{call:?}");
+    assert_eq!(
+        call.subject_name.as_deref(),
+        Some(client.name.as_str()),
+        "{call:?}"
+    );
+    // CheckAuthorizationFlags::AllowUserInteraction: the session's agent may ask.
+    assert_eq!(call.flags, 1, "{call:?}");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn polkit_checks_the_bus_sender_for_every_action() {
+    if !requirements_met() {
+        return;
+    }
+    let sb = Sandbox::with_upgrade_available();
+    let bus = Bus::start();
+    let authority = Authority::start(&bus).await;
+    let helper = Helper::start(&bus, &sb, &["--polkit"]);
+    let client = Client::connect(&bus).await;
+
+    let plan = upgrade_plan(&sb);
+    let id = client.upgrade(&plan.digest).await.expect("upgrade");
+    let op = client.wait_terminal(&id, &helper).await;
+    assert_eq!(
+        op.state,
+        OperationState::Succeeded,
+        "{op:?}\n{}",
+        helper.stderr()
+    );
+    let call = authority.wait_for_call(actions::UPGRADE).await;
+    assert_caller_subject(&call, &client);
+    assert_eq!(call.cancellation_id, id);
+
+    let plan = sb
+        .service()
+        .system_plan_install("fixture", "ccfix-c")
+        .expect("install plan");
+    let id = client
+        .install("fixture", "ccfix-c", &plan.digest)
+        .await
+        .expect("install");
+    let op = client.wait_terminal(&id, &helper).await;
+    assert_eq!(op.state, OperationState::Succeeded, "{op:?}");
+    assert_caller_subject(&authority.wait_for_call(actions::INSTALL).await, &client);
+
+    let plan = sb
+        .service()
+        .system_plan_remove("ccfix-c", false)
+        .expect("remove plan");
+    let id = client
+        .remove("ccfix-c", false, &plan.digest)
+        .await
+        .expect("remove");
+    let op = client.wait_terminal(&id, &helper).await;
+    assert_eq!(op.state, OperationState::Succeeded, "{op:?}");
+    assert_caller_subject(&authority.wait_for_call(actions::REMOVE).await, &client);
+
+    client.set_policy("notifyOnly").await.expect("policy");
+    assert_caller_subject(
+        &authority
+            .wait_for_call(actions::CONFIGURE_AUTO_UPDATE)
+            .await,
+        &client,
+    );
+
+    // No changing call went past polkit unchecked.
+    let checked: Vec<String> = authority.calls().into_iter().map(|c| c.action).collect();
+    assert_eq!(
+        checked,
+        [
+            actions::UPGRADE,
+            actions::INSTALL,
+            actions::REMOVE,
+            actions::CONFIGURE_AUTO_UPDATE
+        ]
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn polkit_denial_challenge_and_timeout_change_nothing() {
+    if !requirements_met() {
+        return;
+    }
+    let sb = Sandbox::with_upgrade_available();
+    let plan = upgrade_plan(&sb);
+    let bus = Bus::start();
+    let authority = Authority::start(&bus).await;
+    let helper = Helper::start(&bus, &sb, &["--polkit", "--auth-timeout-secs", "2"]);
+    let client = Client::connect(&bus).await;
+
+    for (decision, expected) in [
+        (Decision::Deny, "not authorized"),
+        (Decision::Challenge, "no polkit agent"),
+        (Decision::Hang, "timed out"),
+    ] {
+        authority.decide(actions::UPGRADE, decision);
+        let id = client.upgrade(&plan.digest).await.expect("start");
+        let op = client.wait_terminal(&id, &helper).await;
+        assert_eq!(op.state, OperationState::Failed, "{decision:?}: {op:?}");
+        let error = op.error.expect("error");
+        assert_eq!(
+            error.code,
+            ErrorCode::NotAuthorized,
+            "{decision:?}: {error:?}"
+        );
+        assert!(error.message.contains(expected), "{decision:?}: {error:?}");
+        assert!(!op.commit_started);
+        assert_eq!(
+            sb.installed("ccfix-a").as_deref(),
+            Some("1.0-1"),
+            "{decision:?}"
+        );
+        if decision == Decision::Hang {
+            // The pending dialog is withdrawn after the timeout.
+            assert!(
+                authority.cancelled().contains(&id),
+                "{:?}",
+                authority.cancelled()
+            );
+        }
+    }
+    authority.decide(actions::CONFIGURE_AUTO_UPDATE, Decision::Deny);
+    let err = client
+        .set_policy("notifyOnly")
+        .await
+        .expect_err("policy must be denied");
+    assert_eq!(err.code, ErrorCode::NotAuthorized);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cancel_is_checked_by_polkit_and_withdraws_the_dialog() {
+    if !requirements_met() {
+        return;
+    }
+    let sb = Sandbox::with_upgrade_available();
+    let plan = upgrade_plan(&sb);
+    let bus = Bus::start();
+    let authority = Authority::start(&bus).await;
+    let helper = Helper::start(&bus, &sb, &["--polkit"]);
+    let client = Client::connect(&bus).await;
+
+    // The upgrade waits in the (fake) polkit dialog.
+    authority.decide(actions::UPGRADE, Decision::Hang);
+    let id = client.upgrade(&plan.digest).await.expect("start");
+    client
+        .wait_state(&id, OperationState::AwaitingAuthorization)
+        .await;
+    authority.wait_for_call(actions::UPGRADE).await;
+
+    // A denied cancel request changes nothing.
+    authority.decide(actions::CANCEL, Decision::Deny);
+    let err = client.cancel(&id).await.expect_err("cancel denied");
+    assert_eq!(err.code, ErrorCode::NotAuthorized);
+    assert_eq!(
+        client.status(&id).await.expect("status").state,
+        OperationState::AwaitingAuthorization
+    );
+
+    // The initiator cancels with the dedicated action; the dialog is withdrawn.
+    authority.decide(actions::CANCEL, Decision::Allow);
+    client.cancel(&id).await.expect("cancel");
+    let call = authority.wait_for_call(actions::CANCEL).await;
+    assert_caller_subject(&call, &client);
+    let op = client.wait_terminal(&id, &helper).await;
+    assert_eq!(op.state, OperationState::CancelledBeforeCommit, "{op:?}");
+    assert!(authority.cancelled().contains(&id));
+    assert_eq!(sb.installed("ccfix-a").as_deref(), Some("1.0-1"));
 }

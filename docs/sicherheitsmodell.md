@@ -16,7 +16,7 @@
 |---|---|---|---|
 | Oberfläche (`cachyos-center`) | Benutzer | lesen, Pläne berechnen, typisierte Aufträge an den Helper senden | Paketdatenbank ändern, Root-Befehle ausführen, Passwörter abfragen |
 | MCP-Server | Benutzer | sechs Lese-Tools | den Helper erreichen (keine D-Bus-Abhängigkeit im Crate), Dateien lesen, Updates starten |
-| Helper | root | fünf festgelegte schreibende Methoden plus Lesemethoden | Shell, freie Argumente, beliebige Pfade, Lock löschen, Signaturprüfung umgehen |
+| Helper | root | vier festgelegte ändernde Methoden, Abbrechen vor dem Commit, Lesemethoden | Shell, freie Argumente, beliebige Pfade, Lock löschen, Signaturprüfung umgehen |
 
 ## Privilegierter Helper
 
@@ -28,11 +28,20 @@
   (Strings mit strenger Validierung, Booleans, Bitmasken); kein Feld nimmt Befehle oder Pfade
   entgegen.
 - **Autorisierung:** Jede schreibende Methode prüft den tatsächlichen Bus-Absender
-  (`system-bus-name`) per Polkit gegen eine eigene Aktion:
-  `org.cachyos-center.packages.upgrade`, `…install`, `…remove`, `org.cachyos-center.autoupdate.configure`.
-  Voreinstellung jeweils `auth_admin_keep` für aktive Sitzungen, `no` für inaktive und entfernte.
-  Es wird keine Polkit-Regel ausgeliefert, die Aktionen pauschal freigibt. Das Passwort fragt der
-  Polkit-Agent der Sitzung ab; die App enthält kein Passwortfeld.
+  (`system-bus-name`, eindeutiger Name aus dem Nachrichtenkopf) per Polkit gegen eine eigene
+  Aktion: `org.cachyos-center.packages.upgrade`, `…install`, `…remove`,
+  `org.cachyos-center.autoupdate.configure` mit `auth_admin_keep` für aktive Sitzungen und `no`
+  für inaktive und entfernte. `CancelOperation` prüft für den Initiator die Aktion
+  `org.cachyos-center.packages.cancel` (aktive lokale Sitzung ohne Passwort, `no` für inaktive und
+  entfernte; ein Abbruch vor dem Commit ändert nichts am System). Andere Benutzer brauchen zum
+  Abbrechen die Berechtigung des Vorgangs selbst. Es wird keine Polkit-Regel ausgeliefert, die
+  Aktionen pauschal freigibt. Das Passwort fragt der Polkit-Agent der Sitzung ab; die App enthält
+  kein Passwortfeld. Antwortet Polkit nicht innerhalb von fünf Minuten, bricht der Helper die
+  Prüfung ab (`NOT_AUTHORIZED`).
+- **Test der Autorisierung:** Die Sandbox-Tests starten den Helper mit dem echten Polkit-Codepfad
+  gegen eine Test-Authority auf dem privaten Bus und prüfen Subjekt (Bus-Name des Aufrufers),
+  Action-ID je Methode, Ablehnung, Challenge ohne Agent, Zeitüberschreitung mit Rücknahme des
+  Dialogs sowie den Abbruch. Der echte Polkit-Dialog ist nur auf einer VM prüfbar.
 - **Validierung:** Paketnamen nach makepkg-Regeln (kein führendes `-` oder `.`), Repository nur aus
   der pacman-Konfiguration, Plan-Digest als 64-stelliges Hex, Vorgangs-IDs als UUID. Entfernen nur
   für installierte Repository-Pakete; `HoldPkg`-Pakete werden abgelehnt.

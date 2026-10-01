@@ -3,8 +3,10 @@
  "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
 <!--
   One action per changing helper method. No blanket rules are shipped:
-  every action requires administrator authentication by default
-  (auth_admin_keep: the authorization is kept for a few minutes).
+  every action that can change the system requires administrator
+  authentication by default (auth_admin_keep: the authorization is kept for a
+  few minutes). Cancelling one's own operation before the commit only reduces
+  its effect; it is allowed for active local sessions without a password.
 -->
 <policyconfig>
   <vendor>cachyos-center</vendor>
@@ -56,6 +58,18 @@
       <allow_any>no</allow_any>
       <allow_inactive>no</allow_inactive>
       <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+  </action>
+
+  <action id="org.cachyos-center.packages.cancel">
+    <description>Cancel your own package operation before the installation</description>
+    <description xml:lang="de">Eigenen Paketvorgang vor der Installation abbrechen</description>
+    <message>Authorization is required to cancel the package operation.</message>
+    <message xml:lang="de">Zum Abbrechen des Paketvorgangs ist eine Berechtigung erforderlich.</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>yes</allow_active>
     </defaults>
   </action>
 </policyconfig>

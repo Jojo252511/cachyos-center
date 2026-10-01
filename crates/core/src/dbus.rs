@@ -28,8 +28,10 @@ pub mod actions {
     pub const INSTALL: &str = "org.cachyos-center.packages.install";
     pub const REMOVE: &str = "org.cachyos-center.packages.remove";
     pub const CONFIGURE_AUTO_UPDATE: &str = "org.cachyos-center.autoupdate.configure";
+    /// Cancelling one's own operation before the commit (only reduces its effect).
+    pub const CANCEL: &str = "org.cachyos-center.packages.cancel";
 
-    pub const ALL: [&str; 4] = [UPGRADE, INSTALL, REMOVE, CONFIGURE_AUTO_UPDATE];
+    pub const ALL: [&str; 5] = [UPGRADE, INSTALL, REMOVE, CONFIGURE_AUTO_UPDATE, CANCEL];
 }
 
 /// Upper bound for method arguments that carry lists or strings.
