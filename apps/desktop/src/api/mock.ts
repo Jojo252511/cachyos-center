@@ -644,7 +644,7 @@ function planRemove(state: MockState, name: string, recursive: boolean): Transac
     throw appError(
       'DEPENDENCY_PROBLEM',
       'pacman cannot plan the transaction: could not satisfy dependencies',
-      dependents.map((d) => `${d}: requires ${name} (required by ${name})`).join('\n'),
+      dependents.map((d) => `removing ${name} breaks dependency '${name}' required by ${d}`).join('\n'),
     );
   }
   const removed = [def];

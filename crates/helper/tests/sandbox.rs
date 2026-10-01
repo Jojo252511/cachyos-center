@@ -781,6 +781,14 @@ async fn install_and_remove_repository_packages() {
         .system_plan_remove("ccfix-a", false)
         .expect_err("dependency");
     assert_eq!(err.code, ErrorCode::DependencyProblem);
+    let detail = err.detail.as_deref().unwrap_or_default();
+    assert!(
+        detail
+            .lines()
+            .any(|l| l.starts_with("removing ccfix-a breaks dependency ")
+                && l.ends_with(" required by ccfix-b")),
+        "{detail}"
+    );
 
     // Conservative removal of ccfix-b keeps ccfix-a.
     let plan = sb

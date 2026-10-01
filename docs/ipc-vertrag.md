@@ -24,13 +24,13 @@ Stand: v0.1. Dieser Vertrag beschreibt alle Tauri-Commands und Events, die das R
 | `get_dashboard` | – | `Dashboard` | Startseite; ohne Netzwerkzugriff |
 | `get_system_info` | – | `SystemInfo` | |
 | `get_hyprland_info` | – | `HyprlandInfo` | `available=false` + `reason` ohne Hyprland-Sitzung |
-| `get_updates` | – | `UpdateCheckResult` | letzte Prüfung, **kein** Netzwerkzugriff; `status` beachten (`neverChecked` ≠ 0 Updates) |
-| `check_updates` | – | `UpdateCheckResult` | isolierte Prüfung mit `checkupdates` (Netzwerk, kann bis 3 min dauern) |
+| `get_updates` | – | `UpdateCheckResult` | letzte Prüfung, **kein** Netzwerkzugriff; `status` beachten (`neverChecked` ≠ 0 Updates). Die isolierte Prüfdatenbank wird bei jedem Aufruf gegen die installierten Pakete ausgewertet: Nach einem erfolgreichen Upgrade verschwinden die installierten Updates ohne neue Prüfung |
+| `check_updates` | – | `UpdateCheckResult` | isolierte Prüfung mit `checkupdates` (Netzwerk, kann bis 3 min dauern). Netzwerk-, Spiegel- und Signaturfehler lehnen das Promise **nicht** ab, sondern liefern `status: failed` mit `error` (z. B. `OFFLINE`) |
 | `list_installed` | `query: InstalledQuery` | `PackagePage` | `limit` 1–500 (0 = 100), `offset` für Paginierung |
 | `search_packages` | `query: CatalogQuery` | `PackageSummary[]` | nur konfigurierte Repositories, `query` ≥ 2 Zeichen (ohne Repo-Filter), `limit` 1–500 |
 | `get_package_details` | `reference: PackageRef` | `PackageRecord` | |
 | `list_repositories` | – | `RepositoryInfo[]` | |
-| `get_health` | – | `HealthReport` | |
+| `get_health` | – | `HealthReport` | `items[].kind`, `rebootReasons` (`RebootReason`) und `updateBlockers` (`UpdateBlocker`) sind stabile Kennungen; die Oberfläche zeigt lokalisierte Texte, `detail` ist technisches Englisch |
 | `get_news` | `refresh: boolean, force: boolean` | `NewsStatus` | `refresh` lädt Feeds, wenn der Cache älter als 1 h ist |
 | `acknowledge_news` | `until: number` | `NewsStatus` | markiert News bis Zeitpunkt als gelesen |
 | `get_activity` | `limit: number` | `HistoryEntry[]` | 1–200 |
@@ -45,9 +45,9 @@ Stand: v0.1. Dieser Vertrag beschreibt alle Tauri-Commands und Events, die das R
 | Command | Argumente | Rückgabe | Hinweise |
 |---|---|---|---|
 | `plan_install` | `repository: string, name: string` | `TransactionPlan` | benötigt Repository-Daten ≤ 1 h alt, sonst `STALE` → Oberfläche bietet „Jetzt aktualisieren“ (`check_updates`) an |
-| `plan_remove` | `name: string, recursive: boolean` | `TransactionPlan` | `DEPENDENCY_PROBLEM` wenn andere Pakete abhängen (`detail` nennt sie) |
+| `plan_remove` | `name: string, recursive: boolean` | `TransactionPlan` | `DEPENDENCY_PROBLEM` wenn andere Pakete abhängen; `detail` enthält je Abhängigkeit eine Zeile in pacmans Wortlaut: `removing <paket> breaks dependency '<abh.>' required by <abhängiges paket>` (bei Installation: `unable to satisfy dependency '<abh.>' required by <paket>`) |
 
-Der Upgrade-Plan steht in `UpdateCheckResult.plan`.
+Der Upgrade-Plan steht in `UpdateCheckResult.plan`. `TransactionPlan.targets` enthält die vom Nutzer genannten Paketnamen ohne Repository (leer beim Systemupgrade); bei einer Installation markiert `PlanEntry.requested` das angefragte Paket, `PlanEntry.repository` nennt seine Quelle.
 
 ## Systemändernde Commands (Helper, Polkit)
 
@@ -95,5 +95,5 @@ die Abweichung und startet nach erneuter Bestätigung einen neuen Vorgang mit `a
 | Event | Payload | Bedeutung |
 |---|---|---|
 | `hyprland-changed` | – | Monitor/Workspace geändert (Hyprland-Event-Socket), `get_hyprland_info` neu laden |
-| `updates-checked` | `UpdateCheckResult` | Hintergrundprüfung (Einstellung „Prüfintervall“) abgeschlossen |
+| `updates-checked` | `UpdateCheckResult` | eine Prüfung wurde abgeschlossen (Hintergrundprüfung nach „Prüfintervall“ oder `check_updates`) |
 | `operation-finished` | `Operation` | ein Helper-Vorgang wurde beendet (Benachrichtigung wurde ggf. gesendet) |

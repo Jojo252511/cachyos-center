@@ -144,14 +144,17 @@ export function describeError(error: AppError, t: Translate, overrides?: { comma
   };
 }
 
-const DEPENDENT_LINE =/^([a-zA-Z0-9@_+][a-zA-Z0-9@._+-]{0,127}): requires \S/;
+const DEPENDENT_LINE =
+  /^(?:removing \S+ breaks dependency|unable to satisfy dependency) '[^']*' required by ([a-zA-Z0-9@_+][a-zA-Z0-9@._+-]{0,127})$/;
 
 /**
  * Extracts the dependent packages from the `detail` of a `DEPENDENCY_PROBLEM`.
  *
- * The libalpm bridge writes one line per unsatisfied dependency in the form
- * `<package>: requires <dependency> (required by <cause>)`. Only names matching
- * that format are returned; other lines (e.g. conflicts) stay in the raw detail.
+ * The libalpm bridge writes one line per unsatisfied dependency with pacman's
+ * wording: `removing <pkg> breaks dependency '<dep>' required by <package>` or
+ * `unable to satisfy dependency '<dep>' required by <package>`. Only names
+ * matching that format are returned; other lines (e.g. conflicts) stay in the
+ * raw detail.
  */
 export function parseDependentPackages(detail: string | null): string[] {
   if (!detail) return [];

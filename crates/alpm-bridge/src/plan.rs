@@ -31,17 +31,21 @@ fn alpm_err(context: &str, err: alpm::Error) -> AppError {
 fn prepare_error(err: &PrepareError<'_>) -> AppError {
     let mut lines = Vec::new();
     match err.data() {
+        // Same wording as pacman; the UI extracts the package after "required by".
         Some(PrepareData::UnsatisfiedDeps(list)) => {
             for missing in list {
-                let cause = missing
-                    .causing_pkg()
-                    .map(|c| format!(" (required by {c})"))
-                    .unwrap_or_default();
-                lines.push(format!(
-                    "{}: requires {}{cause}",
-                    missing.target(),
-                    missing.depend()
-                ));
+                lines.push(match missing.causing_pkg() {
+                    Some(removed) => format!(
+                        "removing {removed} breaks dependency '{}' required by {}",
+                        missing.depend(),
+                        missing.target()
+                    ),
+                    None => format!(
+                        "unable to satisfy dependency '{}' required by {}",
+                        missing.depend(),
+                        missing.target()
+                    ),
+                });
             }
         }
         Some(PrepareData::ConflictingDeps(list)) => {

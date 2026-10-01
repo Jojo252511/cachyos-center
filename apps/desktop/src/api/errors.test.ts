@@ -49,9 +49,14 @@ describe('error mapping', () => {
   });
 
   it('extracts dependent packages from DEPENDENCY_PROBLEM details', () => {
-    const detail = ['firefox: requires gtk3 (required by gtk3)', 'waybar: requires gtk3', 'a and b are in conflict (x)', 'firefox: requires gtk3'].join('\n');
+    const detail = [
+      "removing gtk3 breaks dependency 'gtk3' required by firefox",
+      "unable to satisfy dependency 'gtk3>=3.24' required by waybar",
+      'a and b are in conflict (x)',
+      "removing gtk3 breaks dependency 'gtk3' required by firefox",
+    ].join('\n');
     expect(parseDependentPackages(detail)).toEqual(['firefox', 'waybar']);
     expect(parseDependentPackages(null)).toEqual([]);
-    expect(parseDependentPackages('rm -rf /: requires root')).toEqual([]);
+    expect(parseDependentPackages("unable to satisfy dependency 'x' required by rm -rf /")).toEqual([]);
   });
 });
