@@ -53,6 +53,8 @@ pub struct HistoryEntry {
     pub upgraded: u32,
     pub removed: u32,
     pub downgraded: u32,
+    /// Updates found by a successful update check; `None` for all other entries.
+    pub updates_found: Option<u32>,
     /// Up to 20 affected package names.
     pub packages: Vec<String>,
     pub outcome_unknown: bool,

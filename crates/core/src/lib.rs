@@ -28,6 +28,7 @@ pub mod timefmt;
 pub mod ui;
 pub mod updates;
 pub mod validate;
+pub mod version;
 
 pub use error::{AppError, AppResult, ErrorCode};
 

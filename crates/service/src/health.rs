@@ -14,8 +14,8 @@ use cachyos_center_core::system::{BackendStatus, KernelInfo, LockStatus};
 use cachyos_center_core::updates::{CheckStatus, UpdateCheckResult};
 use cachyos_center_packages::pacman_log::LogSummary;
 
-/// Package cache size from which a hint is shown (5 GiB).
-pub const LARGE_CACHE: u64 = 5 * 1024 * 1024 * 1024;
+/// Space that `paccache -r` would free from which a hint is shown (1 GiB).
+pub const CACHE_RECLAIM_HINT: u64 = 1024 * 1024 * 1024;
 /// Free space below which a warning is shown (5 GiB) or which is critical (1 GiB).
 pub const LOW_SPACE_WARNING: u64 = 5 * 1024 * 1024 * 1024;
 pub const LOW_SPACE_CRITICAL: u64 = 1024 * 1024 * 1024;
@@ -31,6 +31,7 @@ pub struct HealthInputs<'a> {
     pub backend: &'a BackendStatus,
     pub check: &'a UpdateCheckResult,
     pub package_cache_bytes: Option<u64>,
+    pub package_cache_reclaimable_bytes: Option<u64>,
     pub snapshot: SnapshotSupport,
     pub offline: OfflineUpdateStatus,
     pub external_updaters: Vec<ExternalUpdater>,
@@ -186,13 +187,18 @@ pub fn build(input: HealthInputs<'_>) -> HealthReport {
             blockers.push(UpdateBlocker::LastOperationNeedsAttention);
         }
     }
-    if let Some(bytes) = input.package_cache_bytes
-        && bytes > LARGE_CACHE
+    // Only what the suggested `paccache -r` removes counts: the total size includes the
+    // installed versions, so a hint on it would stay after cleaning up.
+    if let Some(bytes) = input.package_cache_reclaimable_bytes
+        && bytes > CACHE_RECLAIM_HINT
     {
         items.push(item(
             HealthItemKind::PackageCacheLarge,
             Severity::Info,
-            "package cache is large (paccache can clean it)",
+            format!(
+                "paccache -r would free {:.1} GiB of old package versions",
+                bytes as f64 / (1024.0 * 1024.0 * 1024.0)
+            ),
             None,
         ));
     }
@@ -330,6 +336,7 @@ pub fn build(input: HealthInputs<'_>) -> HealthReport {
         reboot_recommended: !reasons.is_empty(),
         reboot_reasons: reasons,
         package_cache_bytes: input.package_cache_bytes,
+        package_cache_reclaimable_bytes: input.package_cache_reclaimable_bytes,
         snapshot: input.snapshot,
         offline_update: input.offline,
         external_updaters: input.external_updaters,
@@ -389,6 +396,7 @@ mod tests {
             backend: b,
             check: c,
             package_cache_bytes: Some(10),
+            package_cache_reclaimable_bytes: Some(0),
             snapshot: snapshot(),
             offline: OfflineUpdateStatus::default(),
             external_updaters: vec![],
@@ -411,6 +419,36 @@ mod tests {
         assert!(report.items.is_empty(), "{:?}", report.items);
         assert!(report.update_blockers.is_empty());
         assert!(!report.reboot_recommended);
+    }
+
+    #[test]
+    fn cache_hint_only_when_paccache_would_free_space() {
+        let k = kernel(false);
+        let b = BackendStatus::Ready {
+            libalpm_version: "16.0.1".into(),
+            built_against: "16.0.1".into(),
+        };
+        let c = UpdateCheckResult::empty(CheckStatus::Fresh);
+        let n = news(0);
+        let gib = 1024 * 1024 * 1024;
+        let cache = |reclaimable: u64| {
+            let mut input = base(&k, &b, &c, &n);
+            // A large cache of installed versions alone is no reason for a hint.
+            input.package_cache_bytes = Some(18 * gib);
+            input.package_cache_reclaimable_bytes = Some(reclaimable);
+            build(input)
+                .items
+                .into_iter()
+                .find(|i| i.kind == HealthItemKind::PackageCacheLarge)
+        };
+        assert_eq!(cache(0), None);
+        assert_eq!(cache(gib), None);
+        let item = cache(gib * 5 / 2).expect("hint");
+        assert_eq!(
+            item.detail,
+            "paccache -r would free 2.5 GiB of old package versions"
+        );
+        assert_eq!(item.severity, Severity::Info);
     }
 
     #[test]

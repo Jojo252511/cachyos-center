@@ -207,6 +207,7 @@ impl AppCore {
         let _ = match result.status {
             CheckStatus::Fresh => {
                 op.summary = format!("{} updates available", result.updates.len());
+                op.progress.packages_total = u32::try_from(result.updates.len()).ok();
                 op.transition(OperationState::Succeeded, end)
             }
             _ => {
@@ -316,6 +317,10 @@ impl AppCore {
             .config()
             .map(|c| c.cache_dirs.clone())
             .unwrap_or_else(|_| vec!["/var/cache/pacman/pkg".to_string()]);
+        let cache = cachyos_center_system::health::package_cache_usage(
+            &cache_dirs,
+            cachyos_center_system::health::PACCACHE_KEEP,
+        );
         health::build(health::HealthInputs {
             config_files: cachyos_center_system::health::config_files(Path::new("/etc")),
             lock: self.packages.lock_status(),
@@ -324,7 +329,8 @@ impl AppCore {
             recent_operations: &ops,
             backend: &backend,
             check: &check,
-            package_cache_bytes: cachyos_center_system::health::package_cache_bytes(&cache_dirs),
+            package_cache_bytes: cache.map(|c| c.total),
+            package_cache_reclaimable_bytes: cache.map(|c| c.reclaimable),
             snapshot: cachyos_center_system::health::snapshot_support(),
             offline: cachyos_center_system::updaters::offline_status(),
             external_updaters: cachyos_center_system::updaters::external_updaters(),

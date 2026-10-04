@@ -48,10 +48,10 @@ Lauf vom 2026-10-01 auf dem Entwicklungsrechner, Rust auf Commit `a905b3a` (nach
 |---|---|
 | `cargo fmt --all --check` | sauber |
 | `cargo clippy --workspace --all-targets --locked -- -D warnings` | keine Warnungen |
-| `CC_REQUIRE_BRIDGE=1 CC_REQUIRE_SANDBOX=1 cargo test --workspace --locked` | **298 bestanden, 0 fehlgeschlagen**, 3 ignoriert (Netzwerk) |
+| `CC_REQUIRE_BRIDGE=1 CC_REQUIRE_SANDBOX=1 cargo test --workspace --locked` | **304 bestanden, 0 fehlgeschlagen**, 3 ignoriert (Netzwerk) |
 | `cargo test --workspace --locked -- --ignored` | 3 von 3 bestanden: `isolated_update_check`, `fetches_the_official_feeds`, `notify_only_checks_without_installing` |
 | `npm run typecheck`, `npm run lint` | sauber |
-| `npm test` | **108 bestanden** in 19 Testdateien |
+| `npm test` | **110 bestanden** in 21 Testdateien |
 | `npm run build` | erfolgreich |
 | `npm audit --audit-level=high` | 0 Schwachstellen |
 | `python3 tests/ui/fokus_webkit.py` | WebKitGTK 2.52.6: 5 Szenarien, **13 von 13 Erwartungen erfüllt**; Gegenproben: ohne Fokus-Rettung 4 Fehler (Fokus auf `<body>`), mit deaktiviertem statt beschäftigtem Start-Button 1 Fehler (Start im Upgrade-Dialog) |
@@ -63,7 +63,7 @@ Rust-Tests je Testprogramm:
 | Crate | Testprogramm | bestanden | ignoriert |
 |---|---|---|---|
 | `alpm-bridge` | Unit-Tests | 8 | – |
-| `core` | Unit-Tests | 132 | – |
+| `core` | Unit-Tests | 133 | – |
 | `core` | `tests/packaging.rs` | 5 | – |
 | `desktop` (Tauri-Backend) | Unit-Tests | 5 | – |
 | `helper` | Unit-Tests | 14 | – |
@@ -74,9 +74,9 @@ Rust-Tests je Testprogramm:
 | `mcp` | `tests/host.rs` (MCP-Host) | 5 | – |
 | `packages` | Unit-Tests | 16 | – |
 | `packages` | `tests/system_readonly.rs` | 7 | 1 (Netzwerk) |
-| `service` | Unit-Tests | 15 | – |
+| `service` | Unit-Tests | 19 | – |
 | `service` | `tests/core_readonly.rs` | 5 | – |
-| `system` | Unit-Tests | 34 | 1 (Netzwerk) |
+| `system` | Unit-Tests | 35 | 1 (Netzwerk) |
 
 **CI (GitHub Actions, Container `archlinux:base-devel`):** Fünf Jobs: Rust inklusive
 Sandbox-Tests mit echtem pacman, Prüfung der TypeScript-Bindings und GUI-Start unter Xvfb ohne
@@ -127,6 +127,25 @@ Alle Prüfungen ohne Root und ohne Änderung an Paketen oder Systemdiensten.
 | Fokusverhalten der Engines | statische Testseite in WebKitGTK 2.52.6 unter Xvfb: fokussierten Button per Tab erreichen, dann entfernen bzw. deaktivieren | Entfernen: Fokus sofort auf `<body>`, **kein** `blur`/`focusout`. Deaktivieren: Fokus bleibt zunächst, wenige Millisekunden später folgt ein `blur` mit Fokus auf `<body>`. Chromium meldet das Entfernen dagegen mit `focusout`. Die Fokus-Rettung beobachtet deshalb den DOM mit einem `MutationObserver` und wertet zusätzlich `focusout` aus |
 | Fokusführung mit echten Tastendrücken | `tests/ui/fokus_webkit.py` (WebKitGTK 2.52.6, eigenes Xvfb, Enter/Leertaste per XTest, Mock-Daten) und die Vite-Vorschau im Chromium-Browserbereich; Fokus über `document.activeElement` und `focusin`/`focusout` protokolliert | Erste Prüfung aus dem Leerzustand der Updates-Seite: Der Leerzustand verschwindet, der Fokus springt nach 6 bis 27 ms (drei Läufe) auf den Kopf-Button „Prüfung läuft …“ und bleibt danach auf „Jetzt prüfen“. Erste Prüfung auf der Übersicht: Der Fokus bleibt während der Prüfung auf dem Button und geht danach auf den Link „Updates ansehen“, der ihn ersetzt. „Übernehmen“: Er bleibt während des Speicherns fokussiert, nach dem verzögerten `blur` des deaktivierten Buttons liegt der Fokus auf „Richtlinie übernommen.“. „Als gelesen markieren“ springt auf die News-Statuszeile, „Abbrechen“ auf den Titel des Vorgangs, beides ohne Umweg über die Seitenüberschrift. Während „Upgrade starten“ läuft, bleibt der Fokus auf dem beschäftigten Start-Button; danach ist „Installieren“ gesperrt und der Fokus liegt auf „Jetzt prüfen“. Chromium zeigt dieselben Ziele für Leerzustand und Übersicht; einen deaktivierten Button ließ es im verborgenen Browserbereich fokussiert, bei fokussiertem Fenster entzieht es ihm den Fokus und die Rettung setzt ihn auf „Richtlinie übernommen.“ (Prüfdurchlauf 5) |
 
+## Realbetrieb auf dem Entwicklungsrechner
+
+Der Nutzer hat das Paket 0.1.0-1 am 2026-10-01 selbst mit `makepkg -si` installiert und seitdem
+im Alltag verwendet. Ausgewertet am 2026-10-04, nur lesend: Helper-Journal unter
+`/var/lib/cachyos-center/operations`, `/var/log/pacman.log`, `systemctl`, Journal des Helpers und
+der Diagnosebericht der App. Kernel 7.2.9-1-cachyos, pacman 7.1.0, libalpm 16.0.1.
+
+| Nachweis | Ergebnis |
+|---|---|
+| Systemupgrades über die App | drei erfolgreich: 2026-10-01 (38 Pakete), 2026-10-02 (15), 2026-10-04 (6), jeweils mit Commit; die Zählungen stimmen mit `pacman.log` überein. Der Helper lief per D-Bus-Aktivierung als Systemdienst und beendete sich nach zehn Minuten Leerlauf. Die Freigabe lief über Polkit (Aktion `auth_admin_keep`); ob der Agent dabei nach dem Passwort fragte, geht aus den Protokollen nicht hervor |
+| „Nur benachrichtigen“ | Timer aktiviert, tägliche Prüfung mit Zufallsverzögerung; zwei Timer-Prüfungen im Journal (15 und 6 Updates), keine Installation. Ein verpasster Termin wurde beim nächsten Start nachgeholt |
+| Richtlinie ändern | Der Helper schrieb das Drop-in `schedule.conf`, systemd plante den nächsten Lauf neu |
+| Diagnosebericht | Werte stimmen mit dem System überein (Repositories in der Reihenfolge der `pacman.conf`, Paketzahlen, Kernel nach dem Neustart, Lock, Timer). Dabei zwei Schwächen gefunden und behoben: Updateprüfungen erschienen als „(+0 ~0 -0)“ statt mit der Zahl der gefundenen Updates, und der Cache-Hinweis empfahl `paccache -r`, obwohl es nichts aufzuräumen gab (17,9 GiB Cache, aber höchstens drei Versionen je Paket) |
+| Cache-Messung | `package_cache_usage` gegen `paccache -d` auf dem realen Cache (2.137 Dateien): `-k3` 0 B, `-k2` 2,25 GiB, `-k1` 5,92 GiB, jeweils identisch; 650 Versionspaare aus dem Cache gegen `vercmp` geprüft, keine Abweichung |
+
+Nicht abgedeckt: frische Installation auf einem sauberen System, Deinstallation, Installieren und
+Entfernen einzelner Pakete, Fehlerszenarien und `pacman-offline`. Der Realbetrieb ersetzt die
+VM-Testmatrix nicht.
+
 ## VM-Testmatrix
 
 Eine CachyOS-VM wurde für diese Version **nicht bereitgestellt**. Die Szenarien aus
@@ -137,11 +156,11 @@ nennt den Test. Ein Ersatznachweis ersetzt den VM-Lauf nicht.
 | Nr. | Szenario | VM-Lauf | Ersatznachweis |
 |---|---|---|---|
 | A1 | App ohne Root starten, reale Daten | offen | GUI aus dem Paket unter X11 und Debug-Build in der Hyprland-Sitzung des Entwicklungsrechners, jeweils mit realen Daten (siehe „Manuelle Prüfungen“) |
-| A2 | Updates prüfen und installieren mit Polkit | offen | `full_upgrade_with_real_pacman` (ohne Polkit-Dialog) |
+| A2 | Updates prüfen und installieren mit Polkit | offen | `full_upgrade_with_real_pacman` (ohne Polkit-Dialog); Realbetrieb: drei Systemupgrades über die App mit Polkit-Freigabe (siehe „Realbetrieb“) |
 | A3 | Paketverwaltung durch andere Instanz gesperrt | offen | `foreign_lock_is_respected_and_never_removed` |
 | A4 | Repository-Paket installieren | offen | `install_and_remove_repository_packages` |
 | A5 | Lokales Paket bleibt unangetastet | offen | `local_packages_are_not_removed` |
-| A6 | „Nur benachrichtigen“ mit Timer | offen | `notify_only_checks_without_installing` (Netzwerk, ohne systemd-Timer) |
+| A6 | „Nur benachrichtigen“ mit Timer | offen | `notify_only_checks_without_installing` (Netzwerk, ohne systemd-Timer); Realbetrieb: Timer seit 2026-10-01 aktiv, Prüfungen ohne Installation |
 | A6b | Automatikmodus mit `pacman-offline` | offen (Modus gesperrt) | `preflight.rs`, `updaters.rs` |
 | A7 | Andere Desktop-Sitzung ohne Hyprland | offen | GUI aus dem Paket unter X11 ohne Hyprland vollständig bedient; CI-Start unter Xvfb |
 | A8 | MCP-Host mit Beispielkonfiguration | offen | `crates/mcp/tests/host.rs` |

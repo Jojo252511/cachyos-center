@@ -275,6 +275,7 @@ fn history(i: i64) -> HistoryEntry {
         upgraded: 2,
         removed: 0,
         downgraded: 0,
+        updates_found: None,
         packages: vec!["linux".into(), "mesa".into()],
         outcome_unknown: false,
     }
@@ -331,6 +332,7 @@ fn health() -> HealthReport {
         reboot_recommended: true,
         reboot_reasons: vec![RebootReason::KernelReplaced],
         package_cache_bytes: Some(1 << 30),
+        package_cache_reclaimable_bytes: Some(1 << 20),
         snapshot: SnapshotSupport {
             btrfs_root: true,
             snapper_installed: true,

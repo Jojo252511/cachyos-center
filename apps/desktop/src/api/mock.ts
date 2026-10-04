@@ -70,6 +70,9 @@ import {
   type UpdateDef,
 } from './mockData';
 
+/** Space `paccache -r` would free in the demo cache (old package versions). */
+const CACHE_RECLAIMABLE = Math.round(1.4 * GIB);
+
 export const SCENARIOS = [
   'default',
   'neverChecked',
@@ -446,7 +449,9 @@ function healthReport(state: MockState): HealthReport {
     items.push({ kind: 'lastOperationFailed', severity: last.state === 'needsAttention' ? 'critical' : 'warning', detail: last.summary, count: null });
     if (last.state === 'needsAttention') blockers.push('lastOperationNeedsAttention');
   }
-  items.push({ kind: 'packageCacheLarge', severity: 'info', detail: 'package cache is large (paccache can clean it)', count: null });
+  if (CACHE_RECLAIMABLE > GIB) {
+    items.push({ kind: 'packageCacheLarge', severity: 'info', detail: `paccache -r would free ${(CACHE_RECLAIMABLE / GIB).toFixed(1)} GiB of old package versions`, count: null });
+  }
   if (state.appInfo.backend.state === 'unavailable') {
     items.push({ kind: 'packageBackendUnavailable', severity: 'critical', detail: state.appInfo.backend.reason, count: null });
     blockers.push('packageBackendUnavailable');
@@ -495,6 +500,7 @@ function healthReport(state: MockState): HealthReport {
     rebootRecommended: state.rebootReasons.length > 0,
     rebootReasons: clone(state.rebootReasons),
     packageCacheBytes: Math.round(7.8 * GIB),
+    packageCacheReclaimableBytes: CACHE_RECLAIMABLE,
     snapshot: clone(state.snapshot),
     offlineUpdate: clone(offline),
     externalUpdaters: clone(state.autoUpdate.externalUpdaters),
@@ -778,6 +784,7 @@ function finish(state: MockState, mop: MockOperation, next: OperationState, summ
     upgraded: mop.op.changes.upgraded,
     removed: mop.op.changes.removed,
     downgraded: mop.op.changes.downgraded,
+    updatesFound: null,
     packages: mop.op.changes.packages,
     outcomeUnknown: mop.op.outcomeUnknown,
   });
@@ -1103,7 +1110,7 @@ function diagnosticReport(state: MockState): string {
     ...(u.error ? [`Last check error: ${u.error.code} ${u.error.message}`] : []),
     '',
     '[Health]',
-    ...(h.items.length === 0 ? ['No findings.'] : h.items.map((i) => `- ${i.severity} ${i.kind}: ${i.detail}`)),
+    ...(h.items.length === 0 ? ['No findings.'] : h.items.map((i) => `- ${i.severity} ${i.kind}: ${i.detail}${i.count !== null ? ` (count: ${i.count})` : ''}`)),
     `Snapshots: btrfs=${h.snapshot.btrfsRoot}, snapper=${h.snapshot.snapperInstalled}, root config=${h.snapshot.rootConfig !== null}, snap-pac=${h.snapshot.snapPacActive}`,
     '',
     '[Automatic updates]',
@@ -1111,7 +1118,16 @@ function diagnosticReport(state: MockState): string {
     ...state.autoUpdate.externalUpdaters.map((x) => `Other updater: ${x.name} (${x.scope}, active: ${x.active})`),
     '',
     '[Recent activity]',
-    ...state.activity.slice(0, 5).map((e) => `- ${ts(e.startedAt)} ${e.kind ?? 'pacman'} ${e.state ?? e.logOutcome ?? 'unknown'} (+${e.installed} ~${e.upgraded} -${e.removed})${e.errorCode ? ` ${e.errorCode}` : ''}`),
+    ...state.activity.slice(0, 5).map((e) => {
+      const source = e.source === 'externalPacman' ? 'external' : e.source;
+      const result =
+        e.kind === 'updateCheck'
+          ? e.updatesFound !== null
+            ? ` (${e.updatesFound} updates found)`
+            : ''
+          : ` (+${e.installed} ~${e.upgraded} -${e.removed}${e.downgraded > 0 ? `, ${e.downgraded} downgraded` : ''})`;
+      return `- ${ts(e.startedAt)} [${source}] ${e.kind ?? 'pacman'} ${e.state ?? e.logOutcome ?? 'unknown'}${result}${e.errorCode ? ` error=${e.errorCode}` : ''}`;
+    }),
   ];
   return `${lines.join('\n')}\n`;
 }

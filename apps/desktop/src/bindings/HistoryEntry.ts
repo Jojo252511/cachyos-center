@@ -11,6 +11,10 @@ import type { OperationState } from "./OperationState";
  */
 export type HistoryEntry = { id: string, source: HistorySource, kind: OperationKind | null, origin: OperationOrigin | null, state: OperationState | null, logOutcome: LogOutcome | null, startedAt: number, endedAt: number | null, summary: string, errorCode: ErrorCode | null, installed: number, upgraded: number, removed: number, downgraded: number, 
 /**
+ * Updates found by a successful update check; `None` for all other entries.
+ */
+updatesFound: number | null, 
+/**
  * Up to 20 affected package names.
  */
 packages: Array<string>, outcomeUnknown: boolean, };

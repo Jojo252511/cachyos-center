@@ -39,6 +39,12 @@ function ActivityItem({ entry }: { entry: HistoryEntry }) {
           <dt>{t('activity.ended')}</dt>
           <dd>{entry.endedAt !== null ? <time dateTime={fmt.iso(entry.endedAt)}>{fmt.dateTime(entry.endedAt)}</time> : outcome.tone === 'info' ? t('activity.running') : t('common.unknown')}</dd>
         </div>
+        {entry.updatesFound !== null ? (
+          <div>
+            <dt>{t('activity.result')}</dt>
+            <dd>{entry.updatesFound === 0 ? t('activity.noUpdatesFound') : t('activity.updatesFound', { count: entry.updatesFound })}</dd>
+          </div>
+        ) : null}
         {hasCounts ? (
           <div>
             <dt>{t('operation.changes.title')}</dt>

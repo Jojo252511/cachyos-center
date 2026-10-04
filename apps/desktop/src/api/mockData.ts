@@ -438,6 +438,7 @@ export function buildActivity(now: number): HistoryEntry[] {
     upgraded: 0,
     removed: 0,
     downgraded: 0,
+    updatesFound: null,
     packages: [],
     outcomeUnknown: false,
     ...partial,
@@ -473,7 +474,8 @@ export function buildActivity(now: number): HistoryEntry[] {
       state: 'succeeded',
       startedAt: now - 6 * DAY,
       endedAt: now - 6 * DAY + 41,
-      summary: 'update check completed (12 updates)',
+      summary: 'update check: succeeded',
+      updatesFound: 12,
     }),
     entry({
       id: 'c3e5a7b9-2c4d-4e6f-8a0b-2c3d4e5f6a71',

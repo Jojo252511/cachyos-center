@@ -11,7 +11,11 @@ import type { UpdateBlocker } from "./UpdateBlocker";
 /**
  * Aggregated health report (UI health center, dashboard card, MCP `health_get`).
  */
-export type HealthReport = { items: Array<HealthItem>, pacnewCount: number, pacsaveCount: number, configFiles: Array<ConfigFileHint>, lock: LockStatus, rebootRecommended: boolean, rebootReasons: Array<RebootReason>, packageCacheBytes: number | null, snapshot: SnapshotSupport, offlineUpdate: OfflineUpdateStatus, externalUpdaters: Array<ExternalUpdater>, 
+export type HealthReport = { items: Array<HealthItem>, pacnewCount: number, pacsaveCount: number, configFiles: Array<ConfigFileHint>, lock: LockStatus, rebootRecommended: boolean, rebootReasons: Array<RebootReason>, packageCacheBytes: number | null, 
+/**
+ * What `paccache -r` would free: all but the three newest versions of each package.
+ */
+packageCacheReclaimableBytes: number | null, snapshot: SnapshotSupport, offlineUpdate: OfflineUpdateStatus, externalUpdaters: Array<ExternalUpdater>, 
 /**
  * Reasons that currently block an unattended update preparation.
  */

@@ -552,6 +552,8 @@ pub struct OperationSummary {
     pub upgraded: u32,
     pub removed: u32,
     pub downgraded: u32,
+    /// Updates found by a successful update check.
+    pub updates_found: Option<u32>,
     /// Up to 20 affected package names.
     pub packages: Vec<String>,
     /// The result of the operation is not certain.
@@ -575,6 +577,7 @@ impl From<HistoryEntry> for OperationSummary {
             upgraded: e.upgraded,
             removed: e.removed,
             downgraded: e.downgraded,
+            updates_found: e.updates_found,
             packages: e.packages.into_iter().take(20).collect(),
             outcome_unknown: e.outcome_unknown,
         }
@@ -722,6 +725,8 @@ pub struct HealthOutput {
     pub update_blockers: Vec<String>,
     /// Size of the package cache in bytes, if known.
     pub package_cache_bytes: Option<u64>,
+    /// What `paccache -r` would free (all but the three newest versions of each package), if known.
+    pub package_cache_reclaimable_bytes: Option<u64>,
     pub snapshot: SnapshotOutput,
     /// The app's own scheduled check (`cachyos-center-preflight.timer`), if readable.
     pub auto_update: Option<AutoUpdateOutput>,
@@ -803,6 +808,7 @@ impl From<HealthReport> for HealthOutput {
                 .map(|b| b.describe().to_string())
                 .collect(),
             package_cache_bytes: r.package_cache_bytes,
+            package_cache_reclaimable_bytes: r.package_cache_reclaimable_bytes,
             snapshot: SnapshotOutput {
                 btrfs_root: r.snapshot.btrfs_root,
                 snapper_installed: r.snapshot.snapper_installed,

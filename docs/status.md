@@ -7,9 +7,9 @@ der Implementierungsauftrag des Projekts; Nachweise stehen im [Testprotokoll](te
 
 | Meilenstein | Umfang | Abnahmekriterium laut Konzept | Status | Nachweis |
 |---|---|---|---|---|
-| M0 – Spike | Tauri-Fenster auf CachyOS/Hyprland, libalpm-ABI-Prüfung, Polkit- und Timer-Prototyp | Start, Rendering, Paketabfrage und Polkit-Dialog real getestet | **teilweise:** Start, Rendering und Paketabfrage unter Hyprland real geprüft; Polkit-Codepfad gegen eine Test-Authority geprüft; der echte Polkit-Dialog braucht eine Root-Installation (VM) | [Bestandsaufnahme](bestandsaufnahme.md), Testprotokoll „Manuelle Prüfungen“, Sandbox-Tests `polkit_*` |
+| M0 – Spike | Tauri-Fenster auf CachyOS/Hyprland, libalpm-ABI-Prüfung, Polkit- und Timer-Prototyp | Start, Rendering, Paketabfrage und Polkit-Dialog real getestet | **teilweise:** Start, Rendering und Paketabfrage unter Hyprland real geprüft; Polkit-Codepfad gegen eine Test-Authority geprüft; seit 2026-10-01 Systemupgrades mit Polkit-Freigabe im Realbetrieb auf dem Entwicklungsrechner | [Bestandsaufnahme](bestandsaufnahme.md), Testprotokoll „Manuelle Prüfungen“, Sandbox-Tests `polkit_*` |
 | M1 – Lesemodus | Dashboard, Systeminfo, installierte Pakete, Repository-Suche, Updateprüfung | keine Root-Rechte nötig; Offline-/Fehlerzustände sichtbar | **erfüllt** | GUI aus dem Paket mit realen Daten (X11, Hyprland), Offline-Prüfung im Netzwerk-Namespace, UI-Tests der Zustände |
-| M2 – manuelle Aktionen | Installieren, Entfernen, vollständiges Update mit Helper und Verlauf | echte Testtransaktionen, Lock-/Signatur-/Abbruchfälle bestanden | **erfüllt in der Sandbox:** echte pacman-Transaktionen inklusive Lock, Signaturfehler, Abbruch, Planabweichung und Wiederherstellung; als Systemdienst mit Polkit-Dialog nur auf einer VM prüfbar | `crates/helper/tests/sandbox.rs` (12 Tests), `recovery.rs`, CI |
+| M2 – manuelle Aktionen | Installieren, Entfernen, vollständiges Update mit Helper und Verlauf | echte Testtransaktionen, Lock-/Signatur-/Abbruchfälle bestanden | **erfüllt in der Sandbox:** echte pacman-Transaktionen inklusive Lock, Signaturfehler, Abbruch, Planabweichung und Wiederherstellung; im Realbetrieb drei Systemupgrades über den Helper als Systemdienst (Installieren und Entfernen dort noch nicht) | `crates/helper/tests/sandbox.rs` (12 Tests), `recovery.rs`, CI |
 | M3 – Auto-Update | Policy, systemd-Preflight, `pacman-offline`-Integration, Stop-Regeln, Benachrichtigungen | Vorbereitung ohne GUI; Installation beim nächsten manuellen Neustart; Blockaden erkannt | **teilweise:** „Nur benachrichtigen“ fertig; Automatikmodus implementiert, aber gesperrt und als „in Entwicklung“ gekennzeichnet, bis der `pacman-offline`-Pfad auf einer VM verifiziert ist | `preflight.rs`, [Automatische Updates](automatische-updates.md) |
 | M4 – MCP | read-only stdio-Server und Host-Beispiel | Tools liefern Daten, keine Schreiboperation erreichbar | **erfüllt** | `crates/mcp/tests/host.rs`, [MCP](mcp.md) |
 | M5 – Release | Paketierung, Doku, i18n, Barrierefreiheit, CI, Testmatrix | Installation/Deinstallation, Upgrade und Start auf frischem CachyOS geprüft | **offen:** Paketbau, Doku, Deutsch/Englisch, Tastatur- und Screenreader-Bedienung (Fokusführung bei Dialogen, Detailbereichen, Vorgangsergebnissen und bei Bedienelementen, die durch einen Zustandswechsel verschwinden oder deaktiviert werden; getestet in jsdom und mit echten Tastendrücken in WebKitGTK 2.52 und Chromium) und CI fertig; die VM-Testmatrix (frische Installation, Upgrade, Deinstallation) fehlt | Testprotokoll „VM-Testmatrix“, UI-Tests |
@@ -35,8 +35,10 @@ belegt, aber nicht mehr durch einen weiteren Prüfdurchlauf bestätigt.
 
 ## Bekannte Einschränkungen
 
-- Polkit-Dialog, Helper als echter Systemdienst, Installation und Deinstallation des Pakets sowie
-  der `pacman-offline`-Pfad sind ohne VM nicht real geprüft.
+- Helper als Systemdienst, Polkit-Freigabe und „Nur benachrichtigen“ laufen seit 2026-10-01 im
+  Realbetrieb auf dem Entwicklungsrechner (drei Systemupgrades über die App, siehe Testprotokoll
+  „Realbetrieb“). Ohne VM nicht geprüft sind eine frische Installation auf einem sauberen System,
+  die Deinstallation, die Fehlerszenarien auf einem echten System und der `pacman-offline`-Pfad.
 - Der Automatikmodus „Automatisch beim nächsten Neustart installieren“ ist gesperrt; freischalten
   kann ihn nur die Administration über `/etc/cachyos-center/experimental.toml`.
 - „Lokal/AUR“ ist eine Näherung (fremde Pakete); die Herkunft ist nicht sicher bestimmbar. Lokale

@@ -6,8 +6,9 @@
 
 use std::fmt::Write as _;
 
-use cachyos_center_core::health::HealthReport;
-use cachyos_center_core::history::HistoryEntry;
+use cachyos_center_core::health::{HealthItem, HealthReport};
+use cachyos_center_core::history::{HistoryEntry, HistorySource};
+use cachyos_center_core::operation::OperationKind;
 use cachyos_center_core::policy::AutoUpdateStatus;
 use cachyos_center_core::sanitize::{SanitizeContext, sanitize};
 use cachyos_center_core::system::{BackendStatus, LockStatus, SystemInfo};
@@ -41,6 +42,51 @@ fn update_count(result: &UpdateCheckResult, n: usize) -> String {
         CheckStatus::Stale => format!("{n} (outdated check)"),
         _ => "unknown".to_string(),
     }
+}
+
+fn health_line(item: &HealthItem) -> String {
+    let count = item
+        .count
+        .map(|n| format!(" (count: {n})"))
+        .unwrap_or_default();
+    format!(
+        "- {:?} {:?}: {}{count}",
+        item.severity, item.kind, item.detail
+    )
+}
+
+/// One activity entry: source, outcome and the result (updates found by a
+/// check, package changes of a transaction).
+fn activity_line(e: &HistoryEntry) -> String {
+    let source = match e.source {
+        HistorySource::App => "app",
+        HistorySource::Timer => "timer",
+        HistorySource::ExternalPacman => "external",
+    };
+    let result = if e.kind == Some(OperationKind::UpdateCheck) {
+        e.updates_found
+            .map(|n| format!(" ({n} updates found)"))
+            .unwrap_or_default()
+    } else {
+        let downgraded = if e.downgraded > 0 {
+            format!(", {} downgraded", e.downgraded)
+        } else {
+            String::new()
+        };
+        format!(
+            " (+{} ~{} -{}{downgraded})",
+            e.installed, e.upgraded, e.removed
+        )
+    };
+    let error = e
+        .error_code
+        .map(|c| format!(" error={c}"))
+        .unwrap_or_default();
+    format!(
+        "- {} [{source}] {}{result}{error}",
+        format_utc(e.started_at),
+        e.summary
+    )
 }
 
 pub fn build(input: &ReportInputs<'_>, ctx: &SanitizeContext) -> String {
@@ -173,7 +219,7 @@ pub fn build(input: &ReportInputs<'_>, ctx: &SanitizeContext) -> String {
         let _ = writeln!(r, "No findings.");
     }
     for item in &input.health.items {
-        let _ = writeln!(r, "- {:?} {:?}: {}", item.severity, item.kind, item.detail);
+        let _ = writeln!(r, "{}", health_line(item));
     }
     let _ = writeln!(
         r,
@@ -205,18 +251,7 @@ pub fn build(input: &ReportInputs<'_>, ctx: &SanitizeContext) -> String {
     let _ = writeln!(r);
     let _ = writeln!(r, "[Recent activity]");
     for e in input.activity.iter().take(5) {
-        let _ = writeln!(
-            r,
-            "- {} {} (+{} ~{} -{}){}",
-            format_utc(e.started_at),
-            e.summary,
-            e.installed,
-            e.upgraded,
-            e.removed,
-            e.error_code
-                .map(|c| format!(" error={c}"))
-                .unwrap_or_default()
-        );
+        let _ = writeln!(r, "{}", activity_line(e));
     }
     sanitize(&r, ctx)
 }
@@ -224,6 +259,89 @@ pub fn build(input: &ReportInputs<'_>, ctx: &SanitizeContext) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn entry(source: HistorySource, kind: Option<OperationKind>, summary: &str) -> HistoryEntry {
+        HistoryEntry {
+            id: "x".into(),
+            source,
+            kind,
+            origin: None,
+            state: None,
+            log_outcome: None,
+            started_at: 1_791_117_582,
+            ended_at: None,
+            summary: summary.into(),
+            error_code: None,
+            installed: 0,
+            upgraded: 0,
+            removed: 0,
+            downgraded: 0,
+            updates_found: None,
+            packages: vec![],
+            outcome_unknown: false,
+        }
+    }
+
+    #[test]
+    fn activity_lines_name_the_source_and_the_result() {
+        let mut check = entry(
+            HistorySource::Timer,
+            Some(OperationKind::UpdateCheck),
+            "update check: succeeded",
+        );
+        check.updates_found = Some(6);
+        assert_eq!(
+            activity_line(&check),
+            "- 2026-10-04 12:39 UTC [timer] update check: succeeded (6 updates found)"
+        );
+        // A check recorded without a count never claims a number.
+        check.updates_found = None;
+        assert_eq!(
+            activity_line(&check),
+            "- 2026-10-04 12:39 UTC [timer] update check: succeeded"
+        );
+        let mut upgrade = entry(
+            HistorySource::App,
+            Some(OperationKind::SystemUpgrade),
+            "system upgrade: succeeded",
+        );
+        upgrade.upgraded = 6;
+        assert_eq!(
+            activity_line(&upgrade),
+            "- 2026-10-04 12:39 UTC [app] system upgrade: succeeded (+0 ~6 -0)"
+        );
+        let mut external = entry(
+            HistorySource::ExternalPacman,
+            None,
+            "pacman transaction completed",
+        );
+        external.removed = 6;
+        external.downgraded = 1;
+        assert_eq!(
+            activity_line(&external),
+            "- 2026-10-04 12:39 UTC [external] pacman transaction completed (+0 ~0 -6, 1 downgraded)"
+        );
+    }
+
+    #[test]
+    fn health_lines_carry_the_count() {
+        use cachyos_center_core::health::{HealthItemKind, Severity};
+        let mut item = HealthItem {
+            kind: HealthItemKind::PacnewFiles,
+            severity: Severity::Warning,
+            detail: "configuration files need a manual merge".into(),
+            count: Some(6),
+        };
+        assert_eq!(
+            health_line(&item),
+            "- Warning PacnewFiles: configuration files need a manual merge (count: 6)"
+        );
+        item.count = None;
+        assert_eq!(
+            health_line(&item),
+            "- Warning PacnewFiles: configuration files need a manual merge"
+        );
+    }
 
     #[test]
     fn counts_are_only_current_after_a_fresh_check() {

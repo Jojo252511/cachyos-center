@@ -73,7 +73,8 @@ libalpm. In einer Hyprland-Sitzung zusätzlich Version, Monitore, aktiver Worksp
 Fensterklasse `cachyos-center` für eigene Fensterregeln.
 
 Das **Gesundheitszentrum** listet `.pacnew`/`.pacsave`-Dateien (manuell zusammenführen, z. B. mit
-`pacdiff`), Neustartempfehlungen, Paketcache, Snapshot-Unterstützung, andere Update-Dienste und
+`pacdiff`), Neustartempfehlungen, Paketcache (Größe und was `paccache -r` freigeben würde),
+Snapshot-Unterstützung, andere Update-Dienste und
 Links zu den offiziellen CachyOS- und Arch-Hinweisen.
 
 **Diagnose kopieren** erzeugt einen bereinigten Bericht (ohne Benutzername, Hostname, Home-Pfade

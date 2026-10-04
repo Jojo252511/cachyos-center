@@ -102,6 +102,13 @@ export function HealthCenter({ report }: { report: HealthReport }) {
 
       <Card title={t('health.cache')} icon={<HardDrive />}>
         <p>{report.packageCacheBytes !== null ? t('health.cache.size', { size: fmt.bytes(report.packageCacheBytes) }) : t('health.cache.unknown')}</p>
+        {report.packageCacheReclaimableBytes !== null ? (
+          <p>
+            {report.packageCacheReclaimableBytes > 0
+              ? t('health.cache.reclaimable', { size: fmt.bytes(report.packageCacheReclaimableBytes) })
+              : t('health.cache.nothingToClean')}
+          </p>
+        ) : null}
         <TerminalCommand command="sudo paccache -r" hint={t('health.cache.hint')} />
       </Card>
 

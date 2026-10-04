@@ -65,6 +65,10 @@ pub fn entry_from_operation(op: &Operation) -> HistoryEntry {
         upgraded: op.changes.upgraded,
         removed: op.changes.removed,
         downgraded: op.changes.downgraded,
+        updates_found: (op.kind == OperationKind::UpdateCheck
+            && op.state == OperationState::Succeeded)
+            .then_some(op.progress.packages_total)
+            .flatten(),
         packages: op.changes.packages.iter().take(20).cloned().collect(),
         outcome_unknown: op.outcome_unknown,
     }
@@ -99,6 +103,7 @@ pub fn entry_from_log(tx: &LogTransaction) -> HistoryEntry {
         upgraded: tx.upgraded,
         removed: tx.removed,
         downgraded: tx.downgraded,
+        updates_found: None,
         packages: tx.packages.clone(),
         outcome_unknown: tx.outcome == LogOutcome::Unknown,
     }
@@ -174,6 +179,24 @@ pub fn merge(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn update_checks_keep_the_number_of_updates_found() {
+        let mut check = Operation::new(
+            "c".into(),
+            OperationKind::UpdateCheck,
+            OperationOrigin::Timer,
+            1,
+        );
+        check.progress.packages_total = Some(6);
+        check.state = OperationState::Succeeded;
+        assert_eq!(entry_from_operation(&check).updates_found, Some(6));
+        check.state = OperationState::Failed;
+        assert_eq!(entry_from_operation(&check).updates_found, None);
+        let mut upgrade = op("u", 1, 2, OperationState::Succeeded);
+        upgrade.progress.packages_total = Some(6);
+        assert_eq!(entry_from_operation(&upgrade).updates_found, None);
+    }
 
     fn op(id: &str, start: i64, end: i64, state: OperationState) -> Operation {
         let mut o = Operation::new(

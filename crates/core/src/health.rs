@@ -161,6 +161,9 @@ pub struct HealthReport {
     pub reboot_reasons: Vec<RebootReason>,
     #[ts(type = "number | null")]
     pub package_cache_bytes: Option<u64>,
+    /// What `paccache -r` would free: all but the three newest versions of each package.
+    #[ts(type = "number | null")]
+    pub package_cache_reclaimable_bytes: Option<u64>,
     pub snapshot: SnapshotSupport,
     pub offline_update: OfflineUpdateStatus,
     pub external_updaters: Vec<ExternalUpdater>,

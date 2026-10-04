@@ -23,6 +23,14 @@ Alle nennenswerten Änderungen dieses Projekts. Format angelehnt an
   oder deaktiviert (z. B. die erste Updateprüfung, „Erneut prüfen“, „Übernehmen“, der Start eines
   Upgrades im Dialog); Prüfskript `tests/ui/fokus_webkit.py` mit echten Tastendrücken in WebKitGTK.
 
+### Behoben
+- Aktivität und Diagnosebericht nennen bei Updateprüfungen die Zahl der gefundenen Updates; der
+  Bericht zeigte dort „(+0 ~0 -0)“. Der Diagnosebericht nennt außerdem die Quelle jedes Eintrags
+  (App, Timer, extern) und die Anzahl bei Gesundheitshinweisen.
+- Der Cache-Hinweis richtet sich nach dem, was `paccache -r` tatsächlich freigeben würde (alle
+  außer den drei neuesten Versionen je Paket, Versionsvergleich wie `vercmp`), nicht mehr nach
+  der Gesamtgröße. Vorher blieb er auch nach dem Aufräumen stehen.
+
 ### Sicherheit
 - Jede schreibende Helper-Methode prüft den Bus-Absender per Polkit, auch das Abbrechen (eigene
   Aktion `org.cachyos-center.packages.cancel`); der Polkit-Codepfad ist gegen eine
