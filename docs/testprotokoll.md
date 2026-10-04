@@ -42,7 +42,7 @@ python3 tests/ui/fokus_webkit.py                      # Fokus in WebKitGTK, eige
 
 ## Ergebnisse
 
-Lauf vom 2026-10-01 auf dem Entwicklungsrechner, Rust auf Commit `a905b3a` (nach Prüfdurchlauf 2, seitdem unverändert), Oberfläche auf Commit `1605ef1` (nach Prüfdurchlauf 5).
+Lauf vom 2026-10-04 auf dem Entwicklungsrechner, Rust und Oberfläche auf Commit `cb6aab9` (Nachbesserung nach dem ersten Realbetrieb). Der Fokus-Lauf mit `fokus_webkit.py` stammt vom Commit `1605ef1`; die Oberfläche hat sich seitdem nur bei Aktivität und Gesundheitszentrum geändert, in der CI läuft er für jeden Commit.
 
 | Befehl | Ergebnis |
 |---|---|
