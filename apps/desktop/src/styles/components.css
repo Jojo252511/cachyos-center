@@ -392,6 +392,8 @@
 }
 
 .card__footer {
+  /* In a card that is stretched to the height of its row, the footer stays at the bottom. */
+  margin-top: auto;
   padding-top: var(--space-2);
   border-top: 1px solid var(--color-border);
 }
@@ -566,6 +568,19 @@
 .kv--compact {
   gap: var(--space-1);
   font-size: var(--text-sm);
+}
+
+/* Key/value pairs side by side in a wide card; the rows of all columns line up. */
+.kv--columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+  column-gap: var(--space-6);
+}
+
+@media (min-width: 40em) {
+  .kv--columns .kv__row {
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 40em) {

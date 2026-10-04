@@ -23,6 +23,12 @@ Alle nennenswerten Änderungen dieses Projekts. Format angelehnt an
   oder deaktiviert (z. B. die erste Updateprüfung, „Erneut prüfen“, „Übernehmen“, der Start eines
   Upgrades im Dialog); Prüfskript `tests/ui/fokus_webkit.py` mit echten Tastendrücken in WebKitGTK.
 
+### Geändert
+- Übersicht und Systemseite: Karten einer Reihe sind gleich hoch, ihre Fußzeilen liegen auf einer
+  Linie, und eine Karte allein in ihrer Reihe nimmt die ganze Breite ein. Auf der Übersicht stehen
+  Updates, Software und Gesundheit nebeneinander, die Systemkarte darunter in voller Breite mit
+  zweispaltigen Werten.
+
 ### Behoben
 - Aktivität und Diagnosebericht nennen bei Updateprüfungen die Zahl der gefundenen Updates; der
   Bericht zeigte dort „(+0 ~0 -0)“. Der Diagnosebericht nennt außerdem die Quelle jedes Eintrags

@@ -161,13 +161,14 @@ function SystemCard({ dashboard }: { dashboard: Dashboard }) {
     <Card
       title={t('dashboard.card.system')}
       icon={<Cpu />}
+      className="card--wide"
       footer={
         <a className="card-link" href={hrefFor('system')}>
           {t('dashboard.card.systemLink')} <ArrowRight aria-hidden="true" />
         </a>
       }
     >
-      <KeyValueList className="kv--compact">
+      <KeyValueList className="kv--compact kv--columns">
         <KeyValue label={t('system.os.name')}>
           {s.os}
           {!s.isCachyos ? <span className="muted block">{t('dashboard.os.notCachyos')}</span> : null}
@@ -382,9 +383,9 @@ export function DashboardPage() {
 
       <div className="card-grid">
         <UpdatesCard updates={updates} headline={headline} />
-        <SystemCard dashboard={dashboard} />
         <SoftwareCard dashboard={dashboard} />
         <HealthCard dashboard={dashboard} />
+        <SystemCard dashboard={dashboard} />
       </div>
 
       <Card
